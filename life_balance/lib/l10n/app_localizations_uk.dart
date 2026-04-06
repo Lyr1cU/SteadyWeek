@@ -337,7 +337,8 @@ class AppLocalizationsUk extends AppLocalizations {
       'Один тиждень за раз — маленькі кроки, які можна повторювати.';
 
   @override
-  String get onboardingPhilosophyTitle => 'Баланс важливіший за перевантаження';
+  String get onboardingPhilosophyTitle =>
+      'Баланс важливіший\nза перевантаження';
 
   @override
   String get onboardingPhilosophyBody =>

@@ -35,3 +35,21 @@ IconData sphereIcon(LifeSphere sphere) {
       return Icons.school_outlined;
   }
 }
+
+/// Повніші іконки для онбордингу / промо-карток сфер.
+IconData sphereOnboardingIcon(LifeSphere sphere) {
+  switch (sphere) {
+    case LifeSphere.work:
+      return Icons.work_rounded;
+    case LifeSphere.body:
+      return Icons.favorite_rounded;
+    case LifeSphere.social:
+      return Icons.people_rounded;
+    case LifeSphere.rest:
+      return Icons.beach_access_rounded;
+    case LifeSphere.home:
+      return Icons.home_rounded;
+    case LifeSphere.growth:
+      return Icons.school_rounded;
+  }
+}

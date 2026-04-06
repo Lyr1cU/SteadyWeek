@@ -713,7 +713,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingPhilosophyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Balance beats overload'**
+  /// **'Balance beats\noverload'**
   String get onboardingPhilosophyTitle;
 
   /// No description provided for @onboardingPhilosophyBody.

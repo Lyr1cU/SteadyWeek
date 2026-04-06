@@ -337,7 +337,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'One week at a time — small steps you can actually repeat.';
 
   @override
-  String get onboardingPhilosophyTitle => 'Balance beats overload';
+  String get onboardingPhilosophyTitle => 'Balance beats\noverload';
 
   @override
   String get onboardingPhilosophyBody =>

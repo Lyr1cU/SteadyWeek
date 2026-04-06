@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,12 +11,14 @@ import 'package:life_balance/ui/sphere_ui.dart';
 /// First onboarding slides use this background (see `assets/branding/`).
 const String kOnboardingWelcomeBackgroundAsset = 'assets/branding/background 1.jpg';
 
-// Typography aligned to design mock (logical px).
-const double _kFontTopWelcome = 36;
-const double _kFontMainTitle = 44;
-const double _kFontBody = 23;
-const double _kFontButton = 21;
-const double _kFontSkip = 14;
+// Typography — пропорції як раніше (відносно 36:44:23:21), трохи крупніше.
+const double _kFontTopWelcome = 43;
+const double _kFontMainTitle = 53;
+const double _kFontBody = 28;
+const double _kFontButton = 25;
+/// Заголовки на скрольних кроках (було 28 при main 44 → ~34 при 53).
+const double _kFontScrollSectionTitle = 34;
+const double _kOnboardingSparkleIconSize = 26;
 const double _kHorizontalPad = 24;
 const double _kProgressBarHeight = 5;
 /// Єдиний розрив між уже пройденою частиною бару і поточним етапом.
@@ -23,9 +27,12 @@ const double _kProgressStageGap = 5;
 const double _kHeaderBlockTopPadding = 52;
 /// Shift copy upward in lower-third slides (layout box unchanged for overlap with button row).
 const double _kLowerThirdTextLift = 22;
-const double _kLowerThirdTextToButtonGap = 10;
-/// Pulls the button row up so vertical placement stays close to the old side‑by‑side layout.
-const double _kLowerThirdButtonRowLift = 14;
+/// Відступ навбару від низу зони PageView — піднято, щоб ряд кнопок був ближче до тексту 1-го слайду.
+const double _kOnboardingNavBottomFraction = 0.34;
+const double _kOnboardingNavBottomMin = 118;
+const double _kOnboardingNavBottomMax = 200;
+/// Додатковий низ скролу = навбар + ✨ + запас (разом із navBottom у LayoutBuilder).
+const double _kOnboardingScrollPadBeyondNav = 92;
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -117,7 +124,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildOutlinedBackButton({required String label}) {
+  Widget _buildOutlinedSecondaryButton({
+    required String label,
+    required VoidCallback onPressed,
+  }) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
@@ -130,7 +140,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ],
       ),
       child: OutlinedButton(
-        onPressed: _previous,
+        onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white.withValues(alpha: 0.95),
           padding: _kNavButtonPadding,
@@ -157,12 +167,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-
-    final skipStyle = TextStyle(
-      fontSize: _kFontSkip,
-      fontWeight: FontWeight.w500,
-      color: Colors.white.withValues(alpha: 0.65),
-    );
 
     final topWelcomeStyle = const TextStyle(
       fontSize: _kFontTopWelcome,
@@ -230,16 +234,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       if (_page < _totalPages - 1)
                         Align(
                           alignment: Alignment.centerRight,
-                          child: TextButton(
+                          child: _buildOutlinedSecondaryButton(
+                            label: l10n.onboardingSkip,
                             onPressed: _finish,
-                            style: TextButton.styleFrom(
-                              foregroundColor:
-                                  Colors.white.withValues(alpha: 0.65),
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(l10n.onboardingSkip, style: skipStyle),
                           ),
                         ),
                       if (_page < _totalPages - 1)
@@ -266,147 +263,244 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                 ),
                 Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    onPageChanged: (i) => setState(() => _page = i),
-                    children: [
-                      _OnboardingLowerThirdSlide(
-                        horizontalPad: _kHorizontalPad,
-                        topHeadline: null,
-                        topHeadlineStyle: topWelcomeStyle,
-                        mainTitle: l10n.onboardingWelcomeTitle,
-                        mainTitleStyle: mainTitleStyle,
-                        body: l10n.onboardingWelcomeBody,
-                        body2: l10n.onboardingWelcomeBody2,
-                        bodyStyle: bodyStyle,
-                        nextButton: _buildLavenderNextButton(label: l10n.onboardingNext),
-                      ),
-                      _OnboardingLowerThirdSlide(
-                        horizontalPad: _kHorizontalPad,
-                        topHeadline: null,
-                        topHeadlineStyle: topWelcomeStyle,
-                        backButton:
-                            _buildOutlinedBackButton(label: l10n.onboardingBack),
-                        mainTitle: l10n.onboardingPhilosophyTitle,
-                        mainTitleStyle: mainTitleStyle,
-                        body: l10n.onboardingPhilosophyBody,
-                        bodyStyle: bodyStyle,
-                        nextButton: _buildLavenderNextButton(label: l10n.onboardingNext),
-                      ),
-                      _OnboardingScrollPage(
-                        horizontalPad: _kHorizontalPad,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.onboardingSpheresTitle,
-                              style: mainTitleStyle.copyWith(fontSize: 28),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(l10n.onboardingSpheresBody, style: bodyStyle),
-                            const SizedBox(height: 16),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: LifeSphere.values
-                                  .map(
-                                    (s) => Chip(
-                                      avatar: Icon(sphereIcon(s), size: 18),
-                                      label: Text(sphereLabel(l10n, s)),
+                  child: LayoutBuilder(
+                    builder: (context, viewportConstraints) {
+                      final navFromBottom =
+                          (viewportConstraints.maxHeight *
+                                  _kOnboardingNavBottomFraction)
+                              .clamp(
+                                _kOnboardingNavBottomMin,
+                                _kOnboardingNavBottomMax,
+                              )
+                              .toDouble();
+                      final scrollBottomPad =
+                          navFromBottom + _kOnboardingScrollPadBeyondNav;
+
+                      Widget onboardingNavBar() {
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            16,
+                            8,
+                            _kHorizontalPad,
+                            0,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  if (_page > 0)
+                                    _buildOutlinedSecondaryButton(
+                                      label: l10n.onboardingBack,
+                                      onPressed: _previous,
                                     ),
-                                  )
-                                  .toList(),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _OnboardingScrollPage(
-                        horizontalPad: _kHorizontalPad,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.onboardingPlanTitle,
-                              style: mainTitleStyle.copyWith(fontSize: 28),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(l10n.onboardingPlanBody, style: bodyStyle),
-                          ],
-                        ),
-                      ),
-                      _OnboardingScrollPage(
-                        horizontalPad: _kHorizontalPad,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.onboardingFinishTitle,
-                              style: mainTitleStyle.copyWith(fontSize: 28),
-                            ),
-                            const SizedBox(height: 20),
-                            TextField(
-                              controller: _nameController,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: _kFontBody,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: l10n.onboardingNameHint,
-                                labelStyle: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.7),
-                                  fontSize: _kFontBody - 1,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.35),
+                                  const Spacer(),
+                                  _buildLavenderNextButton(
+                                    label: _page >= _totalPages - 1
+                                        ? l10n.onboardingGetStarted
+                                        : l10n.onboardingNext,
                                   ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: _accentLavender,
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Opacity(
+                                  opacity: _page < 2 ? 1 : 0,
+                                  child: Icon(
+                                    Icons.auto_awesome,
+                                    size: _kOnboardingSparkleIconSize,
+                                    color: Colors.white
+                                        .withValues(alpha: 0.95),
                                   ),
                                 ),
                               ),
-                              textCapitalization: TextCapitalization.words,
+                            ],
+                          ),
+                        );
+                      }
+
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.bottomCenter,
+                        children: [
+                          Positioned.fill(
+                            child: PageView(
+                              controller: _pageController,
+                              onPageChanged: (i) =>
+                                  setState(() => _page = i),
+                              children: [
+                                _OnboardingLowerThirdSlide(
+                                  horizontalPad: _kHorizontalPad,
+                                  topHeadline: null,
+                                  topHeadlineStyle: topWelcomeStyle,
+                                  mainTitle: l10n.onboardingWelcomeTitle,
+                                  mainTitleStyle: mainTitleStyle,
+                                  body: l10n.onboardingWelcomeBody,
+                                  body2: l10n.onboardingWelcomeBody2,
+                                  bodyStyle: bodyStyle,
+                                  topSpacerFlex: 3,
+                                  bottomSpacerFlex: 5,
+                                ),
+                                _OnboardingLowerThirdSlide(
+                                  horizontalPad: _kHorizontalPad,
+                                  topHeadline: null,
+                                  topHeadlineStyle: topWelcomeStyle,
+                                  mainTitle:
+                                      l10n.onboardingPhilosophyTitle,
+                                  mainTitleStyle: mainTitleStyle,
+                                  body: l10n.onboardingPhilosophyBody,
+                                  bodyStyle: bodyStyle,
+                                  topSpacerFlex: 3,
+                                  bottomSpacerFlex: 5,
+                                ),
+                                _OnboardingScrollPage(
+                                  horizontalPad: _kHorizontalPad,
+                                  bottomPadding: scrollBottomPad,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        l10n.onboardingSpheresTitle,
+                                        style: mainTitleStyle.copyWith(
+                                          fontSize:
+                                              _kFontScrollSectionTitle,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        l10n.onboardingSpheresBody,
+                                        style: bodyStyle,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _OnboardingGlassSphereGrid(
+                                        l10n: l10n,
+                                        labelStyle: bodyStyle,
+                                        accentLavender: _accentLavender,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                _OnboardingScrollPage(
+                                  horizontalPad: _kHorizontalPad,
+                                  bottomPadding: scrollBottomPad,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        l10n.onboardingPlanTitle,
+                                        style: mainTitleStyle.copyWith(
+                                          fontSize:
+                                              _kFontScrollSectionTitle,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        l10n.onboardingPlanBody,
+                                        style: bodyStyle,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                _OnboardingScrollPage(
+                                  horizontalPad: _kHorizontalPad,
+                                  bottomPadding: scrollBottomPad,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        l10n.onboardingFinishTitle,
+                                        style: mainTitleStyle.copyWith(
+                                          fontSize:
+                                              _kFontScrollSectionTitle,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      TextField(
+                                        controller: _nameController,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: _kFontBody,
+                                        ),
+                                        decoration: InputDecoration(
+                                          labelText:
+                                              l10n.onboardingNameHint,
+                                          labelStyle: TextStyle(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.7),
+                                            fontSize: _kFontBody - 1,
+                                          ),
+                                          enabledBorder:
+                                              OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: Colors.white
+                                                  .withValues(
+                                                      alpha: 0.35),
+                                            ),
+                                          ),
+                                          focusedBorder:
+                                              OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide:
+                                                const BorderSide(
+                                              color: _accentLavender,
+                                            ),
+                                          ),
+                                        ),
+                                        textCapitalization:
+                                            TextCapitalization.words,
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Text(
+                                        l10n.onboardingTourTitle,
+                                        style: TextStyle(
+                                          fontSize: _kFontBody,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '• ${l10n.onboardingTourToday}',
+                                        style: bodyStyle,
+                                      ),
+                                      Text(
+                                        '• ${l10n.onboardingTourWeek}',
+                                        style: bodyStyle,
+                                      ),
+                                      Text(
+                                        '• ${l10n.onboardingTourCloseDay}',
+                                        style: bodyStyle,
+                                      ),
+                                      Text(
+                                        '• ${l10n.onboardingTourProfile}',
+                                        style: bodyStyle,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 20),
-                            Text(
-                              l10n.onboardingTourTitle,
-                              style: TextStyle(
-                                fontSize: _kFontBody,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text('• ${l10n.onboardingTourToday}', style: bodyStyle),
-                            Text('• ${l10n.onboardingTourWeek}', style: bodyStyle),
-                            Text('• ${l10n.onboardingTourCloseDay}', style: bodyStyle),
-                            Text('• ${l10n.onboardingTourProfile}', style: bodyStyle),
-                          ],
-                        ),
-                      ),
-                    ],
+                          ),
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: navFromBottom,
+                            child: onboardingNavBar(),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
-                if (_page >= 2)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, _kHorizontalPad, 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _buildOutlinedBackButton(label: l10n.onboardingBack),
-                        const Spacer(),
-                        _buildLavenderNextButton(
-                          label: _page >= _totalPages - 1
-                              ? l10n.onboardingGetStarted
-                              : l10n.onboardingNext,
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
           ),
@@ -529,10 +623,10 @@ class _OnboardingLowerThirdSlide extends StatelessWidget {
     required this.mainTitleStyle,
     required this.body,
     required this.bodyStyle,
-    required this.nextButton,
     this.topHeadline,
     this.body2,
-    this.backButton,
+    this.topSpacerFlex = 5,
+    this.bottomSpacerFlex = 3,
   });
 
   final double horizontalPad;
@@ -543,8 +637,8 @@ class _OnboardingLowerThirdSlide extends StatelessWidget {
   final String body;
   final String? body2;
   final TextStyle bodyStyle;
-  final Widget nextButton;
-  final Widget? backButton;
+  final int topSpacerFlex;
+  final int bottomSpacerFlex;
 
   @override
   Widget build(BuildContext context) {
@@ -562,8 +656,7 @@ class _OnboardingLowerThirdSlide extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Eat space above so the copy block sits lower (closer to visual center / mock).
-              const Spacer(flex: 5),
+              Spacer(flex: topSpacerFlex),
               if (hasHeadline) Text(topHeadline!, style: topHeadlineStyle),
               SizedBox(height: gapHeadlineToMain),
               Transform.translate(
@@ -582,34 +675,7 @@ class _OnboardingLowerThirdSlide extends StatelessWidget {
                   ],
                 ),
               ),
-              Transform.translate(
-                offset: const Offset(0, -_kLowerThirdButtonRowLift),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(height: _kLowerThirdTextToButtonGap),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        ?backButton,
-                        const Spacer(),
-                        nextButton,
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Icon(
-                  Icons.auto_awesome,
-                  size: 22,
-                  color: Colors.white.withValues(alpha: 0.95),
-                ),
-              ),
-              const Spacer(flex: 3),
+              Spacer(flex: bottomSpacerFlex),
             ],
           ),
         );
@@ -618,19 +684,183 @@ class _OnboardingLowerThirdSlide extends StatelessWidget {
   }
 }
 
+/// Скло + рамка; іконка в градієнтному квадраті (як на макеті онбордингу).
+class _OnboardingGlassSphereGrid extends StatelessWidget {
+  const _OnboardingGlassSphereGrid({
+    required this.l10n,
+    required this.labelStyle,
+    required this.accentLavender,
+  });
+
+  final AppLocalizations l10n;
+  final TextStyle labelStyle;
+  final Color accentLavender;
+
+  @override
+  Widget build(BuildContext context) {
+    const gap = 16.0;
+    return Wrap(
+      spacing: gap,
+      runSpacing: gap,
+      children: [
+        for (final s in LifeSphere.values)
+          _GlassSphereTile(
+            sphere: s,
+            l10n: l10n,
+            labelStyle: labelStyle,
+            accentLavender: accentLavender,
+          ),
+      ],
+    );
+  }
+}
+
+class _GlassSphereTile extends StatelessWidget {
+  const _GlassSphereTile({
+    required this.sphere,
+    required this.l10n,
+    required this.labelStyle,
+    required this.accentLavender,
+  });
+
+  final LifeSphere sphere;
+  final AppLocalizations l10n;
+  final TextStyle labelStyle;
+  final Color accentLavender;
+
+  static const _iconBox = 50.0;
+  static const _radius = 18.0;
+  static const _blurSigma = 18.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = Color.lerp(accentLavender, Colors.white, 0.55)!
+        .withValues(alpha: 0.42);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(_radius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
+        child: IntrinsicWidth(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(_radius),
+              border: Border.all(color: borderColor, width: 1),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.16),
+                  Colors.white.withValues(alpha: 0.05),
+                  accentLavender.withValues(alpha: 0.06),
+                ],
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _OnboardingSphereIconGem(
+                    icon: sphereOnboardingIcon(sphere),
+                    accentLavender: accentLavender,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    sphereLabel(l10n, sphere),
+                    style: labelStyle.copyWith(
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                    ),
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.visible,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OnboardingSphereIconGem extends StatelessWidget {
+  const _OnboardingSphereIconGem({
+    required this.icon,
+    required this.accentLavender,
+  });
+
+  final IconData icon;
+  final Color accentLavender;
+
+  @override
+  Widget build(BuildContext context) {
+    const r = 14.0;
+    return Container(
+      width: _GlassSphereTile._iconBox,
+      height: _GlassSphereTile._iconBox,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(r),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.lerp(accentLavender, Colors.white, 0.35)!,
+            accentLavender,
+            Color.lerp(accentLavender, const Color(0xFF4C3D9E), 0.45)!,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: accentLavender.withValues(alpha: 0.45),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.35),
+            blurRadius: 3,
+            spreadRadius: -2,
+            offset: const Offset(-1, -2),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Icon(
+        icon,
+        size: 26,
+        color: Colors.white.withValues(alpha: 0.96),
+      ),
+    );
+  }
+}
+
 class _OnboardingScrollPage extends StatelessWidget {
   const _OnboardingScrollPage({
     required this.child,
     required this.horizontalPad,
+    this.bottomPadding = 24,
   });
 
   final Widget child;
   final double horizontalPad;
+  final double bottomPadding;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(horizontalPad, 16, horizontalPad, 24),
+      padding: EdgeInsets.fromLTRB(
+        horizontalPad,
+        16,
+        horizontalPad,
+        bottomPadding,
+      ),
       child: child,
     );
   }

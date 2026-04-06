@@ -1,0 +1,4 @@
+$env:Path = "E:\PrProjects\Projtct\tools\flutter\bin;$env:Path"
+cd E:\PrProjects\Projtct\life_balance
+flutter pub get
+flutter run -d chrome

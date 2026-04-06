@@ -1,0 +1,8 @@
+# Local Flutter SDK checkout (optional; see README.md)
+tools/flutter/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+*.swp

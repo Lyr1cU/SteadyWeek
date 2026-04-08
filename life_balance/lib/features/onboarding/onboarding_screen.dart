@@ -8,8 +8,8 @@ import 'package:life_balance/l10n/app_localizations.dart';
 import 'package:life_balance/providers/onboarding_provider.dart';
 import 'package:life_balance/ui/sphere_ui.dart';
 
-/// First onboarding slides use this background (see `assets/branding/`).
-const String kOnboardingWelcomeBackgroundAsset = 'assets/branding/background 1.jpg';
+/// Onboarding + main shell background (see `assets/branding/`).
+const String kOnboardingWelcomeBackgroundAsset = 'assets/branding/onboarding_bg.jpg';
 
 // Typography — пропорції як раніше (відносно 36:44:23:21), трохи крупніше.
 const double _kFontTopWelcome = 43;

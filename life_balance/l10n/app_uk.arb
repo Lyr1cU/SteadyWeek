@@ -242,6 +242,7 @@
   "assistantGoalDoneB": "Одна ціль менше. Маленькі кроки теж рухають гори.",
   "assistantTodayCardTitle": "Помічник балансу",
   "assistantTodayCardHint": "Навіть один маленький крок зі списку вже вперед.",
+  "assistantTodayBubble": "Навіть один маленький крок — це перемога!",
   "assistantScreenTitle": "Помічник балансу",
   "assistantScreenTileSubtitle": "Шари, голос і крамниця",
   "assistantScreenIntro": "З’являються на «Сьогодні» й підтримують, коли ти закриваєш день, купуєш щось або завершуєш тижневу ціль.",

@@ -1220,6 +1220,12 @@ abstract class AppLocalizations {
   /// **'One tiny step on your list still counts as forward.'**
   String get assistantTodayCardHint;
 
+  /// No description provided for @assistantTodayBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'Even one small step is a victory!'**
+  String get assistantTodayBubble;
+
   /// No description provided for @assistantScreenTitle.
   ///
   /// In en, this message translates to:

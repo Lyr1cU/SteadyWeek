@@ -62,10 +62,14 @@ abstract final class AppTheme {
       surfaceTintColor: Colors.transparent,
     ),
     navigationBarTheme: NavigationBarThemeData(
+      height: 92,
       backgroundColor: _icySurface,
       indicatorColor: Color(0xFFE8E2F8),
       surfaceTintColor: Colors.transparent,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      iconTheme: WidgetStateProperty.resolveWith(
+        (_) => const IconThemeData(size: 26),
+      ),
     ),
     cardTheme: CardThemeData(
       elevation: 0,
@@ -133,10 +137,14 @@ abstract final class AppTheme {
       surfaceTintColor: Colors.transparent,
     ),
     navigationBarTheme: NavigationBarThemeData(
+      height: 92,
       backgroundColor: _nightSurface,
       indicatorColor: _frostContainer,
       surfaceTintColor: Colors.transparent,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      iconTheme: WidgetStateProperty.resolveWith(
+        (_) => const IconThemeData(size: 26),
+      ),
     ),
     cardTheme: CardThemeData(
       elevation: 0,

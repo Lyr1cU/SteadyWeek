@@ -627,6 +627,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'One tiny step on your list still counts as forward.';
 
   @override
+  String get assistantTodayBubble => 'Even one small step is a victory!';
+
+  @override
   String get assistantScreenTitle => 'Balance buddy';
 
   @override

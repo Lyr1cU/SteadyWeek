@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:life_balance/data/drift/app_database.dart';
+import 'package:life_balance/features/onboarding/onboarding_screen.dart'
+    show kOnboardingWelcomeBackgroundAsset;
 import 'package:life_balance/l10n/app_localizations.dart';
 import 'package:life_balance/notifications/notification_service.dart';
 import 'package:life_balance/providers.dart';
+import 'package:life_balance/ui/onboarding_typography.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.navigationShell});
@@ -22,20 +25,20 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     ref.watch(routineTemplatesProvider);
 
-    ref.listen<AsyncValue<List<RoutineItem>>>(
-      routineTemplatesProvider,
-      (prev, next) {
-        next.whenData((items) {
-          final loc = AppLocalizations.of(context);
-          if (loc == null) return;
-          NotificationService.instance.syncRoutineReminders(
-            items: items,
-            notificationTitle: loc.appTitle,
-            bodyForItem: (title) => loc.notifRoutineBody(title),
-          );
-        });
-      },
-    );
+    ref.listen<AsyncValue<List<RoutineItem>>>(routineTemplatesProvider, (
+      prev,
+      next,
+    ) {
+      next.whenData((items) {
+        final loc = AppLocalizations.of(context);
+        if (loc == null) return;
+        NotificationService.instance.syncRoutineReminders(
+          items: items,
+          notificationTitle: loc.appTitle,
+          bodyForItem: (title) => loc.notifRoutineBody(title),
+        );
+      });
+    });
 
     ref.listen(appLocalePreferenceProvider, (prev, next) {
       if (prev == next) return;
@@ -53,38 +56,130 @@ class _MainShellState extends ConsumerState<MainShell> {
       });
     });
 
+    final brightness = Theme.of(context).brightness;
+    final navChrome = OnboardingTypography.shellChromeSurface(brightness);
+    final navIndicator = OnboardingTypography.shellChromeNavIndicator(
+      brightness,
+    );
+    final navIcon = OnboardingTypography.shellChromeNavIcon(brightness);
+    final navLabel = brightness == Brightness.dark
+        ? Colors.white
+        : const Color(0xFF2D2548);
+
     return Scaffold(
-      body: widget.navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: widget.navigationShell.currentIndex,
-        onDestinationSelected: widget.navigationShell.goBranch,
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.wb_sunny_outlined),
-            selectedIcon: const Icon(Icons.wb_sunny),
-            label: l10n.navToday,
+      extendBody: true,
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              kOnboardingWelcomeBackgroundAsset,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.medium,
+              errorBuilder: (context, error, stackTrace) =>
+                  Container(color: const Color(0xFF0F0A14)),
+            ),
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.calendar_view_week_outlined),
-            selectedIcon: const Icon(Icons.calendar_view_week),
-            label: l10n.navWeek,
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.2),
+                    Colors.black.withValues(alpha: 0.72),
+                  ],
+                ),
+              ),
+            ),
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.repeat_outlined),
-            selectedIcon: const Icon(Icons.repeat),
-            label: l10n.navRoutine,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.storefront_outlined),
-            selectedIcon: const Icon(Icons.storefront),
-            label: l10n.navShop,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.person_outline),
-            selectedIcon: const Icon(Icons.person),
-            label: l10n.navProfile,
-          ),
+          widget.navigationShell,
         ],
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: OnboardingTypography.shellChromeBorderColor(),
+                  width: 1,
+                ),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  navigationBarTheme: NavigationBarTheme.of(context).copyWith(
+                    backgroundColor: navChrome,
+                    indicatorColor: navIndicator,
+                    iconTheme: WidgetStateProperty.resolveWith((states) {
+                      final selected = states.contains(WidgetState.selected);
+                      return IconThemeData(
+                        size: 26,
+                        color: selected
+                            ? navIcon
+                            : navIcon.withValues(alpha: 0.62),
+                      );
+                    }),
+                    labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                      final selected = states.contains(WidgetState.selected);
+                      return TextStyle(
+                        fontSize: 12,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                        color: selected
+                            ? navLabel
+                            : navLabel.withValues(alpha: 0.68),
+                      );
+                    }),
+                  ),
+                ),
+                child: NavigationBar(
+                  height: 92,
+                  backgroundColor: navChrome,
+                  indicatorColor: navIndicator,
+                  surfaceTintColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  selectedIndex: widget.navigationShell.currentIndex,
+                  onDestinationSelected: widget.navigationShell.goBranch,
+                  destinations: [
+                    NavigationDestination(
+                      icon: const Icon(Icons.wb_sunny_outlined),
+                      selectedIcon: const Icon(Icons.wb_sunny),
+                      label: l10n.navToday,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.calendar_view_week_outlined),
+                      selectedIcon: const Icon(Icons.calendar_view_week),
+                      label: l10n.navWeek,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.repeat_outlined),
+                      selectedIcon: const Icon(Icons.repeat),
+                      label: l10n.navRoutine,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.storefront_outlined),
+                      selectedIcon: const Icon(Icons.storefront),
+                      label: l10n.navShop,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.person_outline),
+                      selectedIcon: const Icon(Icons.person),
+                      label: l10n.navProfile,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

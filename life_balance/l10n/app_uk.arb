@@ -153,6 +153,8 @@
   "onboardingTourTitle": "Куди натискати",
   "onboardingTourToday": "Сьогодні — таймлайн і цілі дня.",
   "onboardingTourWeek": "Тиждень — цілі, кольори днів і підсумок тижня.",
+  "onboardingTourWeekLine1": "• Тиждень — цілі, кольори днів і",
+  "onboardingTourWeekLine2": "підсумок тижня.",
   "onboardingTourCloseDay": "Іконка місяця — закрити день і отримати досвід.",
   "onboardingTourProfile": "Профіль — серія та налаштування.",
   "authTitle": "Акаунт і резервні копії",

@@ -375,6 +375,12 @@ class AppLocalizationsUk extends AppLocalizations {
       'Тиждень — цілі, кольори днів і підсумок тижня.';
 
   @override
+  String get onboardingTourWeekLine1 => '• Тиждень — цілі, кольори днів і';
+
+  @override
+  String get onboardingTourWeekLine2 => 'підсумок тижня.';
+
+  @override
   String get onboardingTourCloseDay =>
       'Іконка місяця — закрити день і отримати досвід.';
 

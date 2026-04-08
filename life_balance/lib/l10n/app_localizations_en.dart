@@ -375,6 +375,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Week — goals, day colors, and week in review.';
 
   @override
+  String get onboardingTourWeekLine1 =>
+      '• Week — goals, day colors, and week in';
+
+  @override
+  String get onboardingTourWeekLine2 => 'review.';
+
+  @override
   String get onboardingTourCloseDay => 'Moon icon — close the day and earn XP.';
 
   @override

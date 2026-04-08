@@ -776,6 +776,18 @@ abstract class AppLocalizations {
   /// **'Week — goals, day colors, and week in review.'**
   String get onboardingTourWeek;
 
+  /// No description provided for @onboardingTourWeekLine1.
+  ///
+  /// In en, this message translates to:
+  /// **'• Week — goals, day colors, and week in'**
+  String get onboardingTourWeekLine1;
+
+  /// No description provided for @onboardingTourWeekLine2.
+  ///
+  /// In en, this message translates to:
+  /// **'review.'**
+  String get onboardingTourWeekLine2;
+
   /// No description provided for @onboardingTourCloseDay.
   ///
   /// In en, this message translates to:

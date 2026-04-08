@@ -159,6 +159,8 @@
   "onboardingTourTitle": "Where to tap",
   "onboardingTourToday": "Today — your timeline and goals for the day.",
   "onboardingTourWeek": "Week — goals, day colors, and week in review.",
+  "onboardingTourWeekLine1": "• Week — goals, day colors, and week in",
+  "onboardingTourWeekLine2": "review.",
   "onboardingTourCloseDay": "Moon icon — close the day and earn XP.",
   "onboardingTourProfile": "Profile — streak and settings.",
   "authTitle": "Account & backup",

@@ -1,9 +1,11 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:life_balance/core/date_key.dart';
 import 'package:life_balance/domain/day_tier.dart';
 import 'package:life_balance/l10n/app_localizations.dart';
+import 'package:life_balance/ui/onboarding_typography.dart';
 
-/// One row per week: Mon–Sun chips colored by [DailyReports.dayTier] when closed.
 class WeekQualityStrip extends StatelessWidget {
   const WeekQualityStrip({
     super.key,
@@ -16,9 +18,12 @@ class WeekQualityStrip extends StatelessWidget {
   final Map<String, DayTier?> byDayKey;
   final void Function(DateTime day) onDayTap;
 
+  static const double _chipRadius = 12;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final accent = OnboardingTypography.accentLavender;
     final labels = [
       l10n.weekdayMonShort,
       l10n.weekdayTueShort,
@@ -29,17 +34,17 @@ class WeekQualityStrip extends StatelessWidget {
       l10n.weekdaySunShort,
     ];
     final now = DateTime.now();
-    final today =
-        DateTime(now.year, now.month, now.day);
+    final today = DateTime(now.year, now.month, now.day);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           l10n.weekQualityStripTitle,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: OnboardingTypography.titleStyle(Colors.white).copyWith(
+            fontSize: OnboardingTypography.welcome,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 10),
         Row(
@@ -59,50 +64,94 @@ class WeekQualityStrip extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 3),
                 child: Tooltip(
                   message: tooltip,
-                  child: Material(
-                    color: _tierFill(context, tier),
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => onDayTap(day),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isToday
-                                ? Theme.of(context).colorScheme.primary
-                                : (tier == null
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .outlineVariant
-                                    : Colors.transparent),
-                            width: isToday ? 2 : 1,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(_chipRadius),
+                    child: Stack(
+                      fit: StackFit.passthrough,
+                      children: [
+                        Positioned.fill(
+                          child: ColoredBox(color: _tierFillDark(tier)),
+                        ),
+                        Positioned.fill(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.14),
+                                    Colors.white.withValues(alpha: 0.05),
+                                    accent.withValues(alpha: 0.07),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              labels[i],
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius:
+                                BorderRadius.circular(_chipRadius),
+                            onTap: () => onDayTap(day),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius:
+                                    BorderRadius.circular(_chipRadius),
+                                border: Border.all(
+                                  color: isToday
+                                      ? accent
+                                      : (tier == null
+                                          ? Color.lerp(
+                                              accent,
+                                              Colors.white,
+                                              0.5,
+                                            )!.withValues(alpha: 0.35)
+                                          : Color.lerp(
+                                              accent,
+                                              Colors.white,
+                                              0.55,
+                                            )!.withValues(alpha: 0.28)),
+                                  width: isToday ? 2 : 1,
+                                ),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 9,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    labels[i],
+                                    style: OnboardingTypography.bodyStyle(
+                                      Colors.white,
+                                      alpha: 0.78,
+                                    ).copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize:
+                                          OnboardingTypography.body - 8,
+                                    ),
                                   ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${day.day}',
+                                    style: OnboardingTypography.bodyStyle(
+                                      Colors.white,
+                                      alpha: 1,
+                                    ).copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize:
+                                          OnboardingTypography.body - 2,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${day.day}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -123,22 +172,13 @@ String _tierLabel(AppLocalizations l10n, DayTier tier) {
   };
 }
 
-Color _tierFill(BuildContext context, DayTier? tier) {
-  final dark = Theme.of(context).brightness == Brightness.dark;
+Color _tierFillDark(DayTier? tier) {
   if (tier == null) {
-    return Theme.of(context).colorScheme.surfaceContainerLow.withValues(
-          alpha: dark ? 0.85 : 0.6,
-        );
+    return Colors.white.withValues(alpha: 0.08);
   }
   return switch (tier) {
-    DayTier.green => dark
-        ? const Color(0xFF1B3D28)
-        : const Color(0xFFDFF5E4),
-    DayTier.yellow => dark
-        ? const Color(0xFF3D3518)
-        : const Color(0xFFFFF4D4),
-    DayTier.red => dark
-        ? const Color(0xFF3D1A1A)
-        : const Color(0xFFFFE4E4),
+    DayTier.green => const Color(0xFF1B3D28),
+    DayTier.yellow => const Color(0xFF3D3518),
+    DayTier.red => const Color(0xFF3D1A1A),
   };
 }

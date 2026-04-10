@@ -631,6 +631,10 @@ class AppLocalizationsUk extends AppLocalizations {
       'Навіть один маленький крок — це перемога!';
 
   @override
+  String get assistantWeekBubble =>
+      'Торкнись дня — відкриється «Сьогодні». Тиждень складається з маленьких кроків.';
+
+  @override
   String get assistantScreenTitle => 'Помічник балансу';
 
   @override

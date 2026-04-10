@@ -630,6 +630,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantTodayBubble => 'Even one small step is a victory!';
 
   @override
+  String get assistantWeekBubble =>
+      'Tap a day to open it on Today — your week builds one step at a time.';
+
+  @override
   String get assistantScreenTitle => 'Balance buddy';
 
   @override

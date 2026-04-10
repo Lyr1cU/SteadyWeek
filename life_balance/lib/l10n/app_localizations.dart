@@ -1226,6 +1226,12 @@ abstract class AppLocalizations {
   /// **'Even one small step is a victory!'**
   String get assistantTodayBubble;
 
+  /// No description provided for @assistantWeekBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a day to open it on Today — your week builds one step at a time.'**
+  String get assistantWeekBubble;
+
   /// No description provided for @assistantScreenTitle.
   ///
   /// In en, this message translates to:

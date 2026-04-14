@@ -14,17 +14,18 @@ abstract final class OnboardingTypography {
   static Color shellChromeSurface(Brightness brightness) {
     return brightness == Brightness.dark
         ? const Color(0xFF352D55).withValues(alpha: 0.88)
-        : const Color(0xFFE8E2F8).withValues(alpha: 0.94);
+        : Colors.white;
   }
 
-  static Color shellChromeBorderColor() =>
-      accentLavender.withValues(alpha: 0.38);
+  static Color shellChromeBorderColor(Brightness brightness) =>
+      brightness == Brightness.dark
+      ? accentLavender.withValues(alpha: 0.38)
+      : const Color(0xFFC9BEF0);
 
-  /// Підсвітка обраного пункту в [NavigationBar] поверх [shellChromeSurface].
   static Color shellChromeNavIndicator(Brightness brightness) {
     return brightness == Brightness.dark
         ? const Color(0xFF5A4D85).withValues(alpha: 0.9)
-        : const Color(0xFF6B5DB8).withValues(alpha: 0.22);
+        : accentLavender.withValues(alpha: 0.25);
   }
 
   static Color shellChromeNavIcon(Brightness brightness) {
@@ -33,12 +34,24 @@ abstract final class OnboardingTypography {
         : const Color(0xFF453A7A);
   }
 
+  static Color textColor(Brightness brightness) {
+    return brightness == Brightness.dark
+        ? Colors.white
+        : const Color(0xFF1E1B4B);
+  }
+
+  static Color textMutedColor(Brightness brightness) {
+    return brightness == Brightness.dark
+        ? Colors.white
+        : const Color(0xFF453A7A);
+  }
+
   static TextStyle titleStyle(Color foreground) => TextStyle(
-        fontSize: mainTitle,
-        fontWeight: FontWeight.w700,
-        color: foreground,
-        height: 1.18,
-      );
+    fontSize: mainTitle,
+    fontWeight: FontWeight.w700,
+    color: foreground,
+    height: 1.18,
+  );
 
   static TextStyle bodyStyle(Color foreground, {double alpha = 0.92}) =>
       TextStyle(

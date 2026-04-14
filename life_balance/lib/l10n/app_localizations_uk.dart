@@ -311,6 +311,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get scheduleNoTime => 'Без фіксованого часу';
 
   @override
+  String get routineSelectTime => 'Обери час';
+
+  @override
   String get onboardingAppBarTitle => 'Ласкаво просимо';
 
   @override
@@ -633,6 +636,18 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get assistantWeekBubble =>
       'Торкнись дня — відкриється «Сьогодні». Тиждень складається з маленьких кроків.';
+
+  @override
+  String get assistantRoutineBubble =>
+      'Обери дні й час — рутина з’явиться на «Сьогодні» як за годинником.';
+
+  @override
+  String get assistantCloseDayBubble =>
+      'Яскравий момент і коротке резюме — щирість дає чесне закриття й досвід.';
+
+  @override
+  String get assistantReviewWeekBubble =>
+      'Хвилина на роздуми. Сфокусуйся на тому, що найважливіше наступного тижня.';
 
   @override
   String get assistantScreenTitle => 'Помічник балансу';

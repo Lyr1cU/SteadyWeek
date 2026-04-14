@@ -24,6 +24,9 @@ class WeekQualityStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final accent = OnboardingTypography.accentLavender;
+    final brightness = Theme.of(context).brightness;
+    final titleColor = OnboardingTypography.textColor(brightness);
+    final chipText = OnboardingTypography.textColor(brightness);
     final labels = [
       l10n.weekdayMonShort,
       l10n.weekdayTueShort,
@@ -35,13 +38,16 @@ class WeekQualityStrip extends StatelessWidget {
     ];
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final lightRim = OnboardingTypography.shellChromeBorderColor(
+      Brightness.light,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           l10n.weekQualityStripTitle,
-          style: OnboardingTypography.titleStyle(Colors.white).copyWith(
+          style: OnboardingTypography.titleStyle(titleColor).copyWith(
             fontSize: OnboardingTypography.welcome,
             fontWeight: FontWeight.w700,
           ),
@@ -58,6 +64,64 @@ class WeekQualityStrip extends StatelessWidget {
             final tooltip = tier == null
                 ? '${labels[i]} ${day.day}: ${l10n.dayNotClosed}\n${l10n.weekGoToTodayForDay}'
                 : '${labels[i]} ${day.day}: ${_tierLabel(l10n, tier)}\n${l10n.weekGoToTodayForDay}';
+
+            if (brightness == Brightness.light) {
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: Tooltip(
+                    message: tooltip,
+                    child: Material(
+                      color: _tierFillLight(tier),
+                      elevation: 2,
+                      shadowColor: const Color(0xFF453A7A).withValues(alpha: 0.08),
+                      surfaceTintColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(_chipRadius),
+                        side: BorderSide(
+                          color: isToday ? accent : lightRim,
+                          width: isToday ? 2 : 1,
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(_chipRadius),
+                        onTap: () => onDayTap(day),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 9),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                labels[i],
+                                style: OnboardingTypography.bodyStyle(
+                                  chipText,
+                                  alpha: 0.78,
+                                ).copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: OnboardingTypography.body - 8,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${day.day}',
+                                style: OnboardingTypography.bodyStyle(
+                                  chipText,
+                                  alpha: 1,
+                                ).copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: OnboardingTypography.body - 2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
 
             return Expanded(
               child: Padding(
@@ -93,13 +157,11 @@ class WeekQualityStrip extends StatelessWidget {
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            borderRadius:
-                                BorderRadius.circular(_chipRadius),
+                            borderRadius: BorderRadius.circular(_chipRadius),
                             onTap: () => onDayTap(day),
                             child: Container(
                               decoration: BoxDecoration(
-                                borderRadius:
-                                    BorderRadius.circular(_chipRadius),
+                                borderRadius: BorderRadius.circular(_chipRadius),
                                 border: Border.all(
                                   color: isToday
                                       ? accent
@@ -117,9 +179,7 @@ class WeekQualityStrip extends StatelessWidget {
                                   width: isToday ? 2 : 1,
                                 ),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 9,
-                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 9),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -130,8 +190,7 @@ class WeekQualityStrip extends StatelessWidget {
                                       alpha: 0.78,
                                     ).copyWith(
                                       fontWeight: FontWeight.w600,
-                                      fontSize:
-                                          OnboardingTypography.body - 8,
+                                      fontSize: OnboardingTypography.body - 8,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
@@ -142,8 +201,7 @@ class WeekQualityStrip extends StatelessWidget {
                                       alpha: 1,
                                     ).copyWith(
                                       fontWeight: FontWeight.w700,
-                                      fontSize:
-                                          OnboardingTypography.body - 2,
+                                      fontSize: OnboardingTypography.body - 2,
                                     ),
                                   ),
                                 ],
@@ -180,5 +238,16 @@ Color _tierFillDark(DayTier? tier) {
     DayTier.green => const Color(0xFF1B3D28),
     DayTier.yellow => const Color(0xFF3D3518),
     DayTier.red => const Color(0xFF3D1A1A),
+  };
+}
+
+Color _tierFillLight(DayTier? tier) {
+  if (tier == null) {
+    return Colors.white;
+  }
+  return switch (tier) {
+    DayTier.green => const Color(0xFFE8F5E9),
+    DayTier.yellow => const Color(0xFFFFF8E1),
+    DayTier.red => const Color(0xFFFFEBEE),
   };
 }

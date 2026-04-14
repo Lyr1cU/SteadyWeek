@@ -662,6 +662,12 @@ abstract class AppLocalizations {
   /// **'No fixed time'**
   String get scheduleNoTime;
 
+  /// No description provided for @routineSelectTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Select time'**
+  String get routineSelectTime;
+
   /// No description provided for @onboardingAppBarTitle.
   ///
   /// In en, this message translates to:
@@ -1231,6 +1237,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap a day to open it on Today — your week builds one step at a time.'**
   String get assistantWeekBubble;
+
+  /// No description provided for @assistantRoutineBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick days and times here — routines show up on Today like clockwork.'**
+  String get assistantRoutineBubble;
+
+  /// No description provided for @assistantCloseDayBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'A highlight and a reflection — honest words earn you a fair close and XP.'**
+  String get assistantCloseDayBubble;
+
+  /// No description provided for @assistantReviewWeekBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'A moment to pause and reflect. Focus on what matters next week.'**
+  String get assistantReviewWeekBubble;
 
   /// No description provided for @assistantScreenTitle.
   ///

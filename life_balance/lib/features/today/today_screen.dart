@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +13,7 @@ import 'package:life_balance/data/routine_repository.dart';
 import 'package:life_balance/l10n/app_localizations.dart';
 import 'package:life_balance/providers.dart';
 import 'package:life_balance/ui/assistant_buddy.dart';
+import 'package:life_balance/ui/chrome_surfaces.dart';
 import 'package:life_balance/ui/onboarding_typography.dart';
 import 'package:life_balance/ui/sphere_ui.dart';
 
@@ -41,13 +40,19 @@ class TodayScreen extends ConsumerWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
-        actionsIconTheme: const IconThemeData(color: Colors.white),
+        foregroundColor: OnboardingTypography.textColor(
+          Theme.of(context).brightness,
+        ),
+        iconTheme: IconThemeData(
+          color: OnboardingTypography.textColor(Theme.of(context).brightness),
+        ),
+        actionsIconTheme: IconThemeData(
+          color: OnboardingTypography.textColor(Theme.of(context).brightness),
+        ),
         title: Text(
           l10n.navToday,
           style: OnboardingTypography.titleStyle(
-            Colors.white,
+            OnboardingTypography.textColor(Theme.of(context).brightness),
           ).copyWith(fontSize: OnboardingTypography.welcome),
         ),
         actions: [
@@ -84,14 +89,24 @@ class TodayScreen extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                     child: Material(
-                      elevation: 0,
+                      elevation:
+                          Theme.of(context).brightness == Brightness.light
+                          ? 4
+                          : 0,
+                      shadowColor:
+                          Theme.of(context).brightness == Brightness.light
+                          ? const Color(0xFF453A7A).withValues(alpha: 0.12)
+                          : Colors.transparent,
+                      surfaceTintColor: Colors.transparent,
                       color: OnboardingTypography.shellChromeSurface(
                         Theme.of(context).brightness,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
-                          color: OnboardingTypography.shellChromeBorderColor(),
+                          color: OnboardingTypography.shellChromeBorderColor(
+                            Theme.of(context).brightness,
+                          ),
                           width: 1,
                         ),
                       ),
@@ -157,15 +172,25 @@ class TodayScreen extends ConsumerWidget {
                             child: Text(
                               '$e',
                               style: OnboardingTypography.bodyStyle(
-                                Colors.white,
+                                OnboardingTypography.textColor(
+                                  Theme.of(context).brightness,
+                                ),
                               ),
                             ),
                           ),
                           data: (goals) {
                             if (goals.isEmpty) {
+                              final textColor = OnboardingTypography.textColor(
+                                Theme.of(context).brightness,
+                              );
+                              final linkColor =
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? OnboardingTypography.accentLavender
+                                  : const Color(0xFF6B5DB8);
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
-                                child: _TodayGlassPanel(
+                                child: ChromeCard(
                                   borderRadius: 16,
                                   child: Padding(
                                     padding: const EdgeInsets.all(14),
@@ -177,7 +202,7 @@ class TodayScreen extends ConsumerWidget {
                                           l10n.todayWeeklyGoalsHeading,
                                           style:
                                               OnboardingTypography.titleStyle(
-                                                Colors.white,
+                                                textColor,
                                               ).copyWith(
                                                 fontSize: OnboardingTypography
                                                     .welcome,
@@ -187,7 +212,7 @@ class TodayScreen extends ConsumerWidget {
                                         Text(
                                           l10n.todayWeeklyGoalsEmpty,
                                           style: OnboardingTypography.bodyStyle(
-                                            Colors.white,
+                                            textColor,
                                           ),
                                         ),
                                         const SizedBox(height: 8),
@@ -205,17 +230,16 @@ class TodayScreen extends ConsumerWidget {
                                               context.go('/week');
                                             },
                                             style: TextButton.styleFrom(
-                                              foregroundColor:
-                                                  OnboardingTypography
-                                                      .accentLavender,
+                                              foregroundColor: linkColor,
                                             ),
                                             child: Text(
                                               l10n.todayWeeklyGoalsOpenWeek,
                                               style:
                                                   OnboardingTypography.bodyStyle(
-                                                    OnboardingTypography
-                                                        .accentLavender,
+                                                    linkColor,
                                                     alpha: 1,
+                                                  ).copyWith(
+                                                    fontWeight: FontWeight.w600,
                                                   ),
                                             ),
                                           ),
@@ -245,7 +269,18 @@ class TodayScreen extends ConsumerWidget {
                                 ),
                               ),
                           ],
-                          error: (e, _) => [Center(child: Text('$e'))],
+                          error: (e, _) => [
+                            Center(
+                              child: Text(
+                                '$e',
+                                style: OnboardingTypography.bodyStyle(
+                                  OnboardingTypography.textColor(
+                                    Theme.of(context).brightness,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                           data: (rows) {
                             if (rows.isEmpty) {
                               return [
@@ -258,7 +293,9 @@ class TodayScreen extends ConsumerWidget {
                                       l10n.todayEmpty,
                                       textAlign: TextAlign.center,
                                       style: OnboardingTypography.bodyStyle(
-                                        Colors.white,
+                                        OnboardingTypography.textColor(
+                                          Theme.of(context).brightness,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -317,16 +354,38 @@ class _TodayAssistantFloat extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 240),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.55),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black.withValues(alpha: 0.55)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.22)
+                    : OnboardingTypography.shellChromeBorderColor(
+                        Brightness.light,
+                      ),
+              ),
+              boxShadow: Theme.of(context).brightness == Brightness.light
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF453A7A).withValues(alpha: 0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Text(
                 AppLocalizations.of(context)!.assistantTodayBubble,
-                style: OnboardingTypography.bodyStyle(Colors.white, alpha: 0.95)
-                    .copyWith(
+                style:
+                    OnboardingTypography.bodyStyle(
+                      OnboardingTypography.textColor(
+                        Theme.of(context).brightness,
+                      ),
+                      alpha: 0.95,
+                    ).copyWith(
                       fontSize: OnboardingTypography.body - 2,
                       height: 1.45,
                     ),
@@ -348,45 +407,6 @@ class _TodayAssistantFloat extends ConsumerWidget {
   }
 }
 
-class _TodayGlassPanel extends StatelessWidget {
-  const _TodayGlassPanel({required this.child, this.borderRadius = 18});
-
-  final Widget child;
-  final double borderRadius;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = OnboardingTypography.accentLavender;
-    final borderColor = Color.lerp(
-      accent,
-      Colors.white,
-      0.55,
-    )!.withValues(alpha: 0.42);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: borderColor, width: 1),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.14),
-                Colors.white.withValues(alpha: 0.05),
-                accent.withValues(alpha: 0.06),
-              ],
-            ),
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
 class _TodayWeeklyGoalsCard extends ConsumerWidget {
   const _TodayWeeklyGoalsCard({required this.date, required this.goals});
 
@@ -398,7 +418,11 @@ class _TodayWeeklyGoalsCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final range = weekRangeDisplay(date, Localizations.localeOf(context));
     final goalsRepo = ref.read(goalsRepositoryProvider);
-    return _TodayGlassPanel(
+    final textColor = OnboardingTypography.textColor(
+      Theme.of(context).brightness,
+    );
+
+    return ChromeCard(
       borderRadius: 16,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 8, 8),
@@ -415,13 +439,13 @@ class _TodayWeeklyGoalsCard extends ConsumerWidget {
                       Text(
                         l10n.todayWeeklyGoalsHeading,
                         style: OnboardingTypography.titleStyle(
-                          Colors.white,
+                          textColor,
                         ).copyWith(fontSize: OnboardingTypography.welcome),
                       ),
                       Text(
                         range,
                         style: OnboardingTypography.bodyStyle(
-                          Colors.white,
+                          textColor,
                           alpha: 0.65,
                         ).copyWith(fontSize: OnboardingTypography.body - 4),
                       ),
@@ -440,9 +464,11 @@ class _TodayWeeklyGoalsCard extends ConsumerWidget {
                   child: Text(
                     l10n.todayWeeklyGoalsOpenWeek,
                     style: OnboardingTypography.bodyStyle(
-                      OnboardingTypography.accentLavender,
+                      Theme.of(context).brightness == Brightness.dark
+                          ? OnboardingTypography.accentLavender
+                          : const Color(0xFF6B5DB8),
                       alpha: 1,
-                    ),
+                    ).copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -508,7 +534,14 @@ class _CompactTodayGoalRow extends StatelessWidget {
     final t = goal.targetCount <= 0 ? 1 : goal.targetCount;
     final p = goal.progressCount.clamp(0, t);
     final done = p >= t || goal.status == 1;
-    final accent = OnboardingTypography.accentLavender;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark
+        ? OnboardingTypography.accentLavender
+        : const Color(0xFF6B5DB8);
+    final textColor = OnboardingTypography.textColor(
+      Theme.of(context).brightness,
+    );
+
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Row(
@@ -517,7 +550,7 @@ class _CompactTodayGoalRow extends StatelessWidget {
           Icon(
             done ? Icons.check_circle : sphereIcon(sphere),
             size: 22,
-            color: done ? accent : Colors.white.withValues(alpha: 0.9),
+            color: done ? accent : textColor.withValues(alpha: 0.7),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -529,7 +562,7 @@ class _CompactTodayGoalRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: OnboardingTypography.bodyStyle(
-                    Colors.white,
+                    textColor,
                     alpha: 1,
                   ).copyWith(fontWeight: FontWeight.w500),
                 ),
@@ -538,7 +571,7 @@ class _CompactTodayGoalRow extends StatelessWidget {
                   value: t == 0 ? 0 : p / t,
                   borderRadius: BorderRadius.circular(4),
                   color: accent,
-                  backgroundColor: Colors.white.withValues(alpha: 0.15),
+                  backgroundColor: textColor.withValues(alpha: 0.15),
                 ),
               ],
             ),
@@ -547,7 +580,7 @@ class _CompactTodayGoalRow extends StatelessWidget {
           Text(
             l10n.goalProgressLabel(p, t),
             style: OnboardingTypography.bodyStyle(
-              Colors.white,
+              textColor,
               alpha: 0.7,
             ).copyWith(fontSize: OnboardingTypography.body - 6),
           ),
@@ -565,61 +598,6 @@ class _CompactTodayGoalRow extends StatelessWidget {
   }
 }
 
-/// Непрозора кнопка дії в меню «⋯» (skip / undo) у стилі хром-плашок додатка.
-class _RoutinePopupMenuAction extends StatelessWidget {
-  const _RoutinePopupMenuAction({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = OnboardingTypography.accentLavender;
-    const fill = Color(0xFF3D355F);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: fill,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Color.lerp(
-            accent,
-            Colors.white,
-            0.38,
-          )!.withValues(alpha: 0.58),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.14),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 20, color: accent),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              label,
-              style: OnboardingTypography.bodyStyle(Colors.white, alpha: 0.96)
-                  .copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: OnboardingTypography.body - 2,
-                  ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-enum _RoutineDayMenu { skip, undoSkip }
-
 Widget _todayRoutineTile({
   required BuildContext context,
   required AppLocalizations l10n,
@@ -636,13 +614,20 @@ Widget _todayRoutineTile({
   );
   final tomorrow = date.add(const Duration(days: 1));
   final runsTomorrow = routineRunsOnWeekday(r.item.weekdays, tomorrow.weekday);
-  final accent = OnboardingTypography.accentLavender;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final accent = isDark
+      ? OnboardingTypography.accentLavender
+      : const Color(0xFF6B5DB8);
+  final textColor = OnboardingTypography.textColor(
+    Theme.of(context).brightness,
+  );
+
   final titleStyle = OnboardingTypography.bodyStyle(
-    Colors.white,
+    textColor,
     alpha: 1,
   ).copyWith(fontWeight: FontWeight.w600, fontSize: OnboardingTypography.body);
   final subtitleStyle = OnboardingTypography.bodyStyle(
-    Colors.white,
+    textColor,
     alpha: 0.65,
   ).copyWith(fontSize: OnboardingTypography.body - 6);
 
@@ -660,16 +645,20 @@ Widget _todayRoutineTile({
               textAlign: TextAlign.start,
               maxLines: 1,
               softWrap: false,
-              style: OnboardingTypography.bodyStyle(accent, alpha: 1).copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: OnboardingTypography.body - 4,
-              ),
+              style:
+                  OnboardingTypography.bodyStyle(
+                    isDark ? OnboardingTypography.accentLavender : textColor,
+                    alpha: 1,
+                  ).copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: OnboardingTypography.body - 4,
+                  ),
             ),
           ),
         ),
         const SizedBox(width: 5),
         Expanded(
-          child: _TodayGlassPanel(
+          child: ChromeCard(
             child: Theme(
               data: Theme.of(context).copyWith(
                 checkboxTheme: CheckboxThemeData(
@@ -678,17 +667,29 @@ Widget _todayRoutineTile({
                       return accent;
                     }
                     if (states.contains(WidgetState.disabled)) {
-                      return Colors.white.withValues(alpha: 0.12);
+                      return isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : const Color(0xFF1E1B4B).withValues(alpha: 0.12);
                     }
-                    return Colors.white.withValues(alpha: 0.2);
+                    return isDark
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : const Color(0xFF1E1B4B).withValues(alpha: 0.2);
                   }),
-                  checkColor: WidgetStateProperty.all(const Color(0xFF1E1B4B)),
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.45)),
+                  checkColor: WidgetStateProperty.all(
+                    isDark ? const Color(0xFF1E1B4B) : Colors.white,
+                  ),
+                  side: BorderSide(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.45)
+                        : const Color(0xFF1E1B4B).withValues(alpha: 0.45),
+                  ),
                 ),
               ),
               child: Material(
                 color: r.isSkipped
-                    ? Colors.black.withValues(alpha: 0.25)
+                    ? (isDark
+                          ? Colors.black.withValues(alpha: 0.25)
+                          : Colors.white.withValues(alpha: 0.4))
                     : Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
@@ -732,9 +733,7 @@ Widget _todayRoutineTile({
                               r.item.title,
                               style: r.isSkipped
                                   ? titleStyle.copyWith(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.55,
-                                      ),
+                                      color: textColor.withValues(alpha: 0.55),
                                     )
                                   : titleStyle,
                             ),
@@ -755,69 +754,100 @@ Widget _todayRoutineTile({
                         if (!r.isDone || r.isSkipped)
                           Padding(
                             padding: const EdgeInsets.only(right: 4, top: 8),
-                            child: PopupMenuButton<_RoutineDayMenu>(
-                              elevation: 8,
-                              color: const Color(0xFF201C38),
-                              surfaceTintColor: Colors.transparent,
-                              shadowColor: Colors.black.withValues(alpha: 0.5),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              menuPadding: const EdgeInsets.all(10),
-                              constraints: const BoxConstraints(minWidth: 220),
-                              icon: Icon(
-                                Icons.more_vert,
-                                color: Colors.white.withValues(alpha: 0.65),
-                              ),
-                              onSelected: (action) async {
-                                switch (action) {
-                                  case _RoutineDayMenu.skip:
-                                    await repo.setRoutineDayStatus(
-                                      routineItemId: r.item.id,
-                                      date: date,
-                                      status: 2,
-                                    );
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          runsTomorrow
-                                              ? l10n.routineSkipSnackbarTomorrow
-                                              : l10n.routineSkipSnackbar,
-                                        ),
-                                      ),
-                                    );
-                                  case _RoutineDayMenu.undoSkip:
-                                    await repo.setRoutineDayStatus(
-                                      routineItemId: r.item.id,
-                                      date: date,
-                                      status: 0,
-                                    );
-                                }
-                              },
-                              itemBuilder: (ctx) {
-                                if (r.isSkipped) {
-                                  return [
-                                    PopupMenuItem<_RoutineDayMenu>(
-                                      padding: EdgeInsets.zero,
-                                      value: _RoutineDayMenu.undoSkip,
-                                      child: _RoutinePopupMenuAction(
-                                        label: l10n.routineUndoSkip,
-                                        icon: Icons.undo_rounded,
+                            child: MenuAnchor(
+                              style: menuStyleFor(context, accent: accent),
+                              alignmentOffset: const Offset(0, 6),
+                              menuChildren: [
+                                if (r.isSkipped)
+                                  MenuItemButton(
+                                    onPressed: () async {
+                                      await repo.setRoutineDayStatus(
+                                        routineItemId: r.item.id,
+                                        date: date,
+                                        status: 0,
+                                      );
+                                    },
+                                    style: MenuItemButton.styleFrom(
+                                      foregroundColor: textColor,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
                                       ),
                                     ),
-                                  ];
-                                }
-                                return [
-                                  PopupMenuItem<_RoutineDayMenu>(
-                                    padding: EdgeInsets.zero,
-                                    value: _RoutineDayMenu.skip,
-                                    child: _RoutinePopupMenuAction(
-                                      label: l10n.routineSkipToday,
-                                      icon: Icons.event_busy_rounded,
+                                    leadingIcon: Icon(
+                                      Icons.undo_rounded,
+                                      color: accent,
+                                      size: 22,
+                                    ),
+                                    child: Text(
+                                      l10n.routineUndoSkip,
+                                      style: OnboardingTypography.bodyStyle(
+                                        textColor,
+                                        alpha: 0.95,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  MenuItemButton(
+                                    onPressed: () async {
+                                      await repo.setRoutineDayStatus(
+                                        routineItemId: r.item.id,
+                                        date: date,
+                                        status: 2,
+                                      );
+                                      if (!context.mounted) return;
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            runsTomorrow
+                                                ? l10n.routineSkipSnackbarTomorrow
+                                                : l10n.routineSkipSnackbar,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    style: MenuItemButton.styleFrom(
+                                      foregroundColor: textColor,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    leadingIcon: Icon(
+                                      Icons.event_busy_rounded,
+                                      color: accent,
+                                      size: 22,
+                                    ),
+                                    child: Text(
+                                      l10n.routineSkipToday,
+                                      style: OnboardingTypography.bodyStyle(
+                                        textColor,
+                                        alpha: 0.95,
+                                      ),
                                     ),
                                   ),
-                                ];
+                              ],
+                              builder: (context, controller, _) {
+                                return IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 40,
+                                    minHeight: 40,
+                                  ),
+                                  icon: Icon(
+                                    Icons.more_vert,
+                                    color: textColor.withValues(alpha: 0.65),
+                                  ),
+                                  onPressed: () {
+                                    if (controller.isOpen) {
+                                      controller.close();
+                                    } else {
+                                      controller.open();
+                                    }
+                                  },
+                                );
                               },
                             ),
                           ),

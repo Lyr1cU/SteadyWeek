@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:life_balance/data/drift/app_database.dart';
 import 'package:life_balance/features/onboarding/onboarding_screen.dart'
-    show kOnboardingWelcomeBackgroundAsset;
+    show
+        kOnboardingWelcomeBackgroundAsset,
+        kOnboardingWelcomeBackgroundLightAsset;
 import 'package:life_balance/l10n/app_localizations.dart';
 import 'package:life_balance/notifications/notification_service.dart';
 import 'package:life_balance/providers.dart';
@@ -74,7 +76,9 @@ class _MainShellState extends ConsumerState<MainShell> {
         children: [
           Positioned.fill(
             child: Image.asset(
-              kOnboardingWelcomeBackgroundAsset,
+              brightness == Brightness.dark
+                  ? kOnboardingWelcomeBackgroundAsset
+                  : kOnboardingWelcomeBackgroundLightAsset,
               fit: BoxFit.cover,
               filterQuality: FilterQuality.medium,
               errorBuilder: (context, error, stackTrace) =>
@@ -87,10 +91,15 @@ class _MainShellState extends ConsumerState<MainShell> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.2),
-                    Colors.black.withValues(alpha: 0.72),
-                  ],
+                  colors: brightness == Brightness.dark
+                      ? [
+                          Colors.black.withValues(alpha: 0.2),
+                          Colors.black.withValues(alpha: 0.72),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.06),
+                          Colors.white.withValues(alpha: 0.28),
+                        ],
                 ),
               ),
             ),
@@ -102,80 +111,82 @@ class _MainShellState extends ConsumerState<MainShell> {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: OnboardingTypography.shellChromeBorderColor(),
-                  width: 1,
-                ),
+          child: Material(
+            color: navChrome,
+            elevation: brightness == Brightness.light ? 10 : 0,
+            shadowColor: brightness == Brightness.light
+                ? const Color(0xFF453A7A).withValues(alpha: 0.18)
+                : Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: OnboardingTypography.shellChromeBorderColor(brightness),
+                width: 1,
               ),
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  navigationBarTheme: NavigationBarTheme.of(context).copyWith(
-                    backgroundColor: navChrome,
-                    indicatorColor: navIndicator,
-                    iconTheme: WidgetStateProperty.resolveWith((states) {
-                      final selected = states.contains(WidgetState.selected);
-                      return IconThemeData(
-                        size: 26,
-                        color: selected
-                            ? navIcon
-                            : navIcon.withValues(alpha: 0.62),
-                      );
-                    }),
-                    labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                      final selected = states.contains(WidgetState.selected);
-                      return TextStyle(
-                        fontSize: 12,
-                        fontWeight: selected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                        color: selected
-                            ? navLabel
-                            : navLabel.withValues(alpha: 0.68),
-                      );
-                    }),
-                  ),
-                ),
-                child: NavigationBar(
-                  height: 92,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                navigationBarTheme: NavigationBarTheme.of(context).copyWith(
                   backgroundColor: navChrome,
                   indicatorColor: navIndicator,
-                  surfaceTintColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  selectedIndex: widget.navigationShell.currentIndex,
-                  onDestinationSelected: widget.navigationShell.goBranch,
-                  destinations: [
-                    NavigationDestination(
-                      icon: const Icon(Icons.wb_sunny_outlined),
-                      selectedIcon: const Icon(Icons.wb_sunny),
-                      label: l10n.navToday,
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.calendar_view_week_outlined),
-                      selectedIcon: const Icon(Icons.calendar_view_week),
-                      label: l10n.navWeek,
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.repeat_outlined),
-                      selectedIcon: const Icon(Icons.repeat),
-                      label: l10n.navRoutine,
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.storefront_outlined),
-                      selectedIcon: const Icon(Icons.storefront),
-                      label: l10n.navShop,
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.person_outline),
-                      selectedIcon: const Icon(Icons.person),
-                      label: l10n.navProfile,
-                    ),
-                  ],
+                  iconTheme: WidgetStateProperty.resolveWith((states) {
+                    final selected = states.contains(WidgetState.selected);
+                    return IconThemeData(
+                      size: 26,
+                      color: selected
+                          ? navIcon
+                          : navIcon.withValues(alpha: 0.62),
+                    );
+                  }),
+                  labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                    final selected = states.contains(WidgetState.selected);
+                    return TextStyle(
+                      fontSize: 12,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: selected
+                          ? navLabel
+                          : navLabel.withValues(alpha: 0.68),
+                    );
+                  }),
                 ),
+              ),
+              child: NavigationBar(
+                height: 92,
+                backgroundColor: navChrome,
+                indicatorColor: navIndicator,
+                surfaceTintColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                selectedIndex: widget.navigationShell.currentIndex,
+                onDestinationSelected: widget.navigationShell.goBranch,
+                destinations: [
+                  NavigationDestination(
+                    icon: const Icon(Icons.wb_sunny_outlined),
+                    selectedIcon: const Icon(Icons.wb_sunny),
+                    label: l10n.navToday,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.calendar_view_week_outlined),
+                    selectedIcon: const Icon(Icons.calendar_view_week),
+                    label: l10n.navWeek,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.repeat_outlined),
+                    selectedIcon: const Icon(Icons.repeat),
+                    label: l10n.navRoutine,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.storefront_outlined),
+                    selectedIcon: const Icon(Icons.storefront),
+                    label: l10n.navShop,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.person_outline),
+                    selectedIcon: const Icon(Icons.person),
+                    label: l10n.navProfile,
+                  ),
+                ],
               ),
             ),
           ),

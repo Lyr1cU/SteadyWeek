@@ -6,10 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:life_balance/domain/life_sphere.dart';
 import 'package:life_balance/l10n/app_localizations.dart';
 import 'package:life_balance/providers/onboarding_provider.dart';
+import 'package:life_balance/ui/onboarding_typography.dart';
 import 'package:life_balance/ui/sphere_ui.dart';
 
 /// Onboarding + main shell background (see `assets/branding/`).
 const String kOnboardingWelcomeBackgroundAsset = 'assets/branding/onboarding_bg.jpg';
+const String kOnboardingWelcomeBackgroundLightAsset = 'assets/branding/onboarding_bg_light.jpg';
 
 // Typography — пропорції як раніше (відносно 36:44:23:21), трохи крупніше.
 const double _kFontTopWelcome = 43;
@@ -55,6 +57,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   static const _accentLavender = Color(0xFFB8A9F9);
   static const _onButtonLabel = Color(0xFF1E1B4B);
   static const _segmentInactive = Color(0x33FFFFFF);
+  static const _segmentInactiveLight = Color(0x33453A7A);
   static const _backOutline = Color(0xFFE8E4FF);
 
   @override
@@ -132,12 +135,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     required String label,
     required VoidCallback onPressed,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tc = OnboardingTypography.textColor(Theme.of(context).brightness);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.35)
+                : const Color(0xFF453A7A).withValues(alpha: 0.12),
             blurRadius: 14,
             offset: const Offset(0, 5),
           ),
@@ -146,11 +153,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white.withValues(alpha: 0.95),
+          foregroundColor: isDark
+              ? Colors.white.withValues(alpha: 0.95)
+              : tc.withValues(alpha: 0.92),
           padding: _kNavButtonPadding,
-          backgroundColor: Colors.white.withValues(alpha: 0.08),
+          backgroundColor: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.92),
           side: BorderSide(
-            color: _backOutline.withValues(alpha: 0.85),
+            color: isDark
+                ? _backOutline.withValues(alpha: 0.85)
+                : OnboardingTypography.shellChromeBorderColor(
+                    Brightness.light,
+                  ),
             width: 1.5,
           ),
           shape: RoundedRectangleBorder(
@@ -171,36 +186,43 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
+    final tc = OnboardingTypography.textColor(brightness);
 
-    final topWelcomeStyle = const TextStyle(
+    final topWelcomeStyle = TextStyle(
       fontSize: _kFontTopWelcome,
       fontWeight: FontWeight.w700,
-      color: Colors.white,
+      color: tc,
       height: 1.2,
     );
 
-    final mainTitleStyle = const TextStyle(
+    final mainTitleStyle = TextStyle(
       fontSize: _kFontMainTitle,
       fontWeight: FontWeight.w700,
-      color: Colors.white,
+      color: tc,
       height: 1.18,
     );
 
     final bodyStyle = TextStyle(
       fontSize: _kFontBody,
       fontWeight: FontWeight.w400,
-      color: Colors.white.withValues(alpha: 0.92),
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.92)
+          : tc.withValues(alpha: 0.88),
       height: 1.68,
     );
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
           Positioned.fill(
             child: Image.asset(
-              kOnboardingWelcomeBackgroundAsset,
+              isDark
+                  ? kOnboardingWelcomeBackgroundAsset
+                  : kOnboardingWelcomeBackgroundLightAsset,
               fit: BoxFit.cover,
               filterQuality: FilterQuality.medium,
               errorBuilder: (context, error, stackTrace) =>
@@ -213,10 +235,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.2),
-                    Colors.black.withValues(alpha: 0.72),
-                  ],
+                  colors: isDark
+                      ? [
+                          Colors.black.withValues(alpha: 0.2),
+                          Colors.black.withValues(alpha: 0.72),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.06),
+                          Colors.white.withValues(alpha: 0.28),
+                        ],
                 ),
               ),
             ),
@@ -247,7 +274,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         pageIndex: _page,
                         totalPages: _totalPages,
                         activeColor: _accentLavender,
-                        trackColor: _segmentInactive,
+                        trackColor: isDark
+                            ? _segmentInactive
+                            : _segmentInactiveLight,
                         height: _kProgressBarHeight,
                         stageGap: _kProgressStageGap,
                       ),
@@ -283,6 +312,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           : navFromBottom + _kOnboardingScrollPadBeyondNav;
 
                       Widget onboardingNavBar() {
+                        final navIsDark =
+                            Theme.of(context).brightness == Brightness.dark;
                         final row = Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -316,8 +347,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     Container(
                                       height: _kFinishDividerThickness,
                                       decoration: BoxDecoration(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.48),
+                                        color: navIsDark
+                                            ? Colors.white.withValues(
+                                                alpha: 0.48,
+                                              )
+                                            : tc.withValues(alpha: 0.22),
                                         borderRadius:
                                             BorderRadius.circular(1),
                                       ),
@@ -572,7 +606,7 @@ class _OnboardingFinishPage extends StatelessWidget {
     final hintStyle = TextStyle(
       fontSize: _kFontBody - 3,
       fontWeight: FontWeight.w400,
-      color: Colors.white.withValues(alpha: 0.55),
+      color: mainTitleStyle.color!.withValues(alpha: 0.52),
       height: 1.35,
     );
     // Вужчі міжрядкові інтервали в картках туру (менша висота рамки при 2+ рядках).
@@ -603,7 +637,7 @@ class _OnboardingFinishPage extends StatelessWidget {
             style: TextStyle(
               fontSize: _kFontBody,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: mainTitleStyle.color,
             ),
           ),
           const SizedBox(height: 14),
@@ -657,27 +691,33 @@ class _FinishNameField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tc = OnboardingTypography.textColor(Theme.of(context).brightness);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Color.lerp(accentLavender, Colors.white, 0.5)!
-              .withValues(alpha: 0.55),
+          color: isDark
+              ? Color.lerp(accentLavender, Colors.white, 0.5)!
+                  .withValues(alpha: 0.55)
+              : OnboardingTypography.shellChromeBorderColor(Brightness.light),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: accentLavender.withValues(alpha: 0.42),
+            color: accentLavender.withValues(alpha: isDark ? 0.42 : 0.2),
             blurRadius: 12,
             offset: const Offset(0, 3),
           ),
         ],
-        color: Colors.black.withValues(alpha: 0.35),
+        color: isDark
+            ? Colors.black.withValues(alpha: 0.35)
+            : Colors.white.withValues(alpha: 0.96),
       ),
       child: TextField(
         controller: controller,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: tc,
           fontSize: _kFontBody,
         ),
         decoration: const InputDecoration(
@@ -706,8 +746,34 @@ class _FinishTourGlassIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = Color.lerp(accentLavender, Colors.white, 0.55)!
-        .withValues(alpha: 0.45);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark
+        ? Color.lerp(accentLavender, Colors.white, 0.55)!.withValues(alpha: 0.45)
+        : OnboardingTypography.shellChromeBorderColor(Brightness.light);
+
+    if (!isDark) {
+      return Material(
+        color: Colors.white,
+        elevation: 2,
+        shadowColor: const Color(0xFF453A7A).withValues(alpha: 0.08),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_radius),
+          side: BorderSide(color: borderColor, width: 1.2),
+        ),
+        child: SizedBox(
+          width: _box,
+          height: _box,
+          child: Center(
+            child: Icon(
+              icon,
+              size: 30,
+              color: accentLavender,
+            ),
+          ),
+        ),
+      );
+    }
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(_radius),
@@ -792,15 +858,29 @@ class _FinishTourCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.2)
+                : OnboardingTypography.shellChromeBorderColor(Brightness.light),
           ),
-          color: Colors.white.withValues(alpha: 0.06),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.white.withValues(alpha: 0.95),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: const Color(0xFF453A7A).withValues(alpha: 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -946,8 +1026,52 @@ class _GlassSphereTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = Color.lerp(accentLavender, Colors.white, 0.55)!
-        .withValues(alpha: 0.42);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark
+        ? Color.lerp(accentLavender, Colors.white, 0.55)!.withValues(alpha: 0.42)
+        : OnboardingTypography.shellChromeBorderColor(Brightness.light);
+
+    final tileChild = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _OnboardingSphereIconGem(
+            icon: sphereOnboardingIcon(sphere),
+            accentLavender: accentLavender,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            sphereLabel(l10n, sphere),
+            style: labelStyle.copyWith(
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+            ),
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.visible,
+          ),
+        ],
+      ),
+    );
+
+    if (!isDark) {
+      return IntrinsicWidth(
+        child: Material(
+          color: Colors.white,
+          elevation: 2,
+          shadowColor: const Color(0xFF453A7A).withValues(alpha: 0.08),
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(_radius),
+            side: BorderSide(color: borderColor, width: 1),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: tileChild,
+        ),
+      );
+    }
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(_radius),
@@ -968,30 +1092,7 @@ class _GlassSphereTile extends StatelessWidget {
                 ],
               ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _OnboardingSphereIconGem(
-                    icon: sphereOnboardingIcon(sphere),
-                    accentLavender: accentLavender,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    sphereLabel(l10n, sphere),
-                    style: labelStyle.copyWith(
-                      fontWeight: FontWeight.w500,
-                      height: 1.2,
-                    ),
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.visible,
-                  ),
-                ],
-              ),
-            ),
+            child: tileChild,
           ),
         ),
       ),

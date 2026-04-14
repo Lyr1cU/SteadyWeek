@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +7,7 @@ import 'package:life_balance/logic/assistant_picker.dart';
 import 'package:life_balance/l10n/app_localizations.dart';
 import 'package:life_balance/providers.dart';
 import 'package:life_balance/ui/assistant_buddy.dart';
+import 'package:life_balance/ui/chrome_surfaces.dart';
 import 'package:life_balance/ui/onboarding_typography.dart';
 import 'package:life_balance/ui/sphere_ui.dart';
 import 'package:life_balance/features/week/week_quality_strip.dart';
@@ -36,6 +35,7 @@ class WeekScreen extends ConsumerWidget {
     final asyncQuality = ref.watch(weekQualityStripProvider);
     final accent = OnboardingTypography.accentLavender;
     final brightness = Theme.of(context).brightness;
+    final tc = OnboardingTypography.textColor(brightness);
     final topInset = MediaQuery.paddingOf(context).top + kToolbarHeight;
     final fabBottom = _fabBottomFromScreen(context);
     final scrollBottomPad = fabBottom + 56;
@@ -48,13 +48,13 @@ class WeekScreen extends ConsumerWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
-        actionsIconTheme: const IconThemeData(color: Colors.white),
+        foregroundColor: tc,
+        iconTheme: IconThemeData(color: tc),
+        actionsIconTheme: IconThemeData(color: tc),
         title: Text(
           lApp.navWeek,
           style: OnboardingTypography.titleStyle(
-            Colors.white,
+            tc,
           ).copyWith(fontSize: OnboardingTypography.welcome),
         ),
         actions: [
@@ -85,12 +85,16 @@ class WeekScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                   child: Material(
-                    elevation: 0,
+                    elevation: brightness == Brightness.light ? 4 : 0,
+                    shadowColor: brightness == Brightness.light
+                        ? const Color(0xFF453A7A).withValues(alpha: 0.12)
+                        : Colors.transparent,
+                    surfaceTintColor: Colors.transparent,
                     color: OnboardingTypography.shellChromeSurface(brightness),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                       side: BorderSide(
-                        color: OnboardingTypography.shellChromeBorderColor(),
+                        color: OnboardingTypography.shellChromeBorderColor(brightness),
                         width: 1,
                       ),
                     ),
@@ -158,9 +162,7 @@ class WeekScreen extends ConsumerWidget {
                             ),
                             error: (e, _) => Text(
                               '$e',
-                              style: OnboardingTypography.bodyStyle(
-                                Colors.white,
-                              ),
+                              style: OnboardingTypography.bodyStyle(tc),
                             ),
                             data: (byDay) => WeekQualityStrip(
                               monday: monday,
@@ -186,9 +188,7 @@ class WeekScreen extends ConsumerWidget {
                           child: Center(
                             child: Text(
                               '$e',
-                              style: OnboardingTypography.bodyStyle(
-                                Colors.white,
-                              ),
+                              style: OnboardingTypography.bodyStyle(tc),
                             ),
                           ),
                         ),
@@ -208,8 +208,8 @@ class WeekScreen extends ConsumerWidget {
                                     lApp.weekGoalsEmpty,
                                     textAlign: TextAlign.center,
                                     style: OnboardingTypography.bodyStyle(
-                                      Colors.white,
-                                      alpha: 0.7,
+                                      tc,
+                                      alpha: 0.72,
                                     ),
                                   ),
                                 ),
@@ -238,7 +238,7 @@ class WeekScreen extends ConsumerWidget {
                                     horizontal: 12,
                                     vertical: 5,
                                   ),
-                                  child: _WeekGlassPanel(
+                                  child: ChromeCard(
                                     child: Padding(
                                       padding: const EdgeInsets.all(14),
                                       child: Column(
@@ -253,8 +253,8 @@ class WeekScreen extends ConsumerWidget {
                                                     : sphereIcon(sphere),
                                                 color: done
                                                     ? accent
-                                                    : Colors.white.withValues(
-                                                        alpha: 0.88,
+                                                    : tc.withValues(
+                                                        alpha: 0.82,
                                                       ),
                                                 size: 22,
                                               ),
@@ -264,7 +264,7 @@ class WeekScreen extends ConsumerWidget {
                                                   g.title,
                                                   style:
                                                       OnboardingTypography.bodyStyle(
-                                                        Colors.white,
+                                                        tc,
                                                         alpha: 1,
                                                       ).copyWith(
                                                         fontWeight:
@@ -275,8 +275,9 @@ class WeekScreen extends ConsumerWidget {
                                               IconButton(
                                                 icon: Icon(
                                                   Icons.delete_outline,
-                                                  color: Colors.white
-                                                      .withValues(alpha: 0.55),
+                                                  color: tc.withValues(
+                                                    alpha: 0.45,
+                                                  ),
                                                   size: 20,
                                                 ),
                                                 tooltip: lApp.delete,
@@ -325,16 +326,23 @@ class WeekScreen extends ConsumerWidget {
                                           const SizedBox(height: 2),
                                           Text(
                                             sphereLabel(lApp, sphere),
-                                            style:
-                                                OnboardingTypography.bodyStyle(
-                                                  Colors.white,
-                                                  alpha: 0.6,
-                                                ).copyWith(
-                                                  fontSize:
-                                                      OnboardingTypography
-                                                          .body -
-                                                      6,
-                                                ),
+                                            style: OnboardingTypography
+                                                .bodyStyle(
+                                              brightness == Brightness.dark
+                                                  ? Colors.white
+                                                  : OnboardingTypography
+                                                      .textMutedColor(
+                                                        brightness,
+                                                      ),
+                                              alpha: brightness ==
+                                                      Brightness.dark
+                                                  ? 0.6
+                                                  : 0.88,
+                                            ).copyWith(
+                                              fontSize:
+                                                  OnboardingTypography.body -
+                                                  6,
+                                            ),
                                           ),
                                           const SizedBox(height: 10),
                                           LinearProgressIndicator(
@@ -343,8 +351,9 @@ class WeekScreen extends ConsumerWidget {
                                               4,
                                             ),
                                             color: accent,
-                                            backgroundColor: Colors.white
-                                                .withValues(alpha: 0.15),
+                                            backgroundColor: tc.withValues(
+                                              alpha: 0.14,
+                                            ),
                                           ),
                                           const SizedBox(height: 10),
                                           Row(
@@ -353,8 +362,8 @@ class WeekScreen extends ConsumerWidget {
                                                 lApp.goalProgressLabel(p, t),
                                                 style:
                                                     OnboardingTypography.bodyStyle(
-                                                      Colors.white,
-                                                      alpha: 0.7,
+                                                      tc,
+                                                      alpha: 0.72,
                                                     ).copyWith(
                                                       fontSize:
                                                           OnboardingTypography
@@ -492,19 +501,40 @@ class _WeekAssistantFloat extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 240),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.55),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black.withValues(alpha: 0.55)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.22)
+                    : OnboardingTypography.shellChromeBorderColor(
+                        Brightness.light,
+                      ),
+              ),
+              boxShadow: Theme.of(context).brightness == Brightness.light
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF453A7A).withValues(alpha: 0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Text(
                 AppLocalizations.of(context)!.assistantWeekBubble,
-                style: OnboardingTypography.bodyStyle(Colors.white, alpha: 0.95)
-                    .copyWith(
-                      fontSize: OnboardingTypography.body - 2,
-                      height: 1.45,
-                    ),
+                style: OnboardingTypography.bodyStyle(
+                  OnboardingTypography.textColor(
+                    Theme.of(context).brightness,
+                  ),
+                  alpha: 0.95,
+                ).copyWith(
+                  fontSize: OnboardingTypography.body - 2,
+                  height: 1.45,
+                ),
               ),
             ),
           ),
@@ -525,45 +555,6 @@ class _WeekAssistantFloat extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _WeekGlassPanel extends StatelessWidget {
-  const _WeekGlassPanel({required this.child});
-
-  final Widget child;
-  static const double borderRadius = 18;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = OnboardingTypography.accentLavender;
-    final borderColor = Color.lerp(
-      accent,
-      Colors.white,
-      0.55,
-    )!.withValues(alpha: 0.42);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: borderColor, width: 1),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.14),
-                Colors.white.withValues(alpha: 0.05),
-                accent.withValues(alpha: 0.06),
-              ],
-            ),
-          ),
-          child: child,
-        ),
-      ),
     );
   }
 }
@@ -637,24 +628,38 @@ class _WeekAddGoalFormDialogState extends State<_WeekAddGoalFormDialog> {
 
   InputDecoration _inputDecoration({
     required Color accent,
+    required Brightness brightness,
     String? labelText,
     String? hintText,
   }) {
+    final isDark = brightness == Brightness.dark;
+    final fg = OnboardingTypography.textColor(brightness);
     final borderRadius = BorderRadius.circular(12);
     return InputDecoration(
       labelText: labelText,
       hintText: hintText,
-      hintStyle: OnboardingTypography.bodyStyle(Colors.white, alpha: 0.42),
-      labelStyle: OnboardingTypography.bodyStyle(Colors.white, alpha: 0.68)
-          .copyWith(fontSize: OnboardingTypography.body - 4),
+      hintStyle: OnboardingTypography.bodyStyle(
+        fg,
+        alpha: isDark ? 0.42 : 0.48,
+      ),
+      labelStyle: OnboardingTypography.bodyStyle(
+        fg,
+        alpha: isDark ? 0.68 : 0.72,
+      ).copyWith(fontSize: OnboardingTypography.body - 4),
       floatingLabelBehavior: FloatingLabelBehavior.auto,
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.08),
+      fillColor: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : const Color(0xFFF5F3FA),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(borderRadius: borderRadius),
       enabledBorder: OutlineInputBorder(
         borderRadius: borderRadius,
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.32)),
+        borderSide: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.32)
+              : const Color(0xFFE2DBF5),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: borderRadius,
@@ -666,56 +671,37 @@ class _WeekAddGoalFormDialogState extends State<_WeekAddGoalFormDialog> {
   @override
   Widget build(BuildContext context) {
     final accent = OnboardingTypography.accentLavender;
-    final rim = Color.lerp(accent, Colors.white, 0.42)!.withValues(alpha: 0.62);
+    final brightness = Theme.of(context).brightness;
+    final textColor = OnboardingTypography.textColor(brightness);
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 400),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: rim, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.38),
-                  blurRadius: 22,
-                  spreadRadius: 0,
-                ),
-              ],
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withValues(alpha: 0.14),
-                  Colors.black.withValues(alpha: 0.78),
-                  accent.withValues(alpha: 0.09),
-                ],
-              ),
-            ),
-            padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    widget.l10n.addWeeklyGoal,
-                    textAlign: TextAlign.center,
-                    style: OnboardingTypography.titleStyle(Colors.white).copyWith(
-                      fontSize: OnboardingTypography.welcome,
-                      fontWeight: FontWeight.w700,
-                    ),
+      child: ChromeCard(
+        borderRadius: 22,
+        lightElevation: 12,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  widget.l10n.addWeeklyGoal,
+                  textAlign: TextAlign.center,
+                  style: OnboardingTypography.titleStyle(textColor).copyWith(
+                    fontSize: OnboardingTypography.welcome,
+                    fontWeight: FontWeight.w700,
                   ),
+                ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: widget.titleController,
                   textCapitalization: TextCapitalization.sentences,
-                  style: OnboardingTypography.bodyStyle(Colors.white, alpha: 0.96),
+                  style: OnboardingTypography.bodyStyle(textColor, alpha: 0.96),
                   decoration: _inputDecoration(
                     accent: accent,
+                    brightness: brightness,
                     hintText: widget.l10n.weeklyGoalTitleHint,
                   ),
                 ),
@@ -723,40 +709,23 @@ class _WeekAddGoalFormDialogState extends State<_WeekAddGoalFormDialog> {
                 TextField(
                   controller: widget.targetController,
                   keyboardType: TextInputType.number,
-                  style: OnboardingTypography.bodyStyle(Colors.white, alpha: 0.96),
+                  style: OnboardingTypography.bodyStyle(textColor, alpha: 0.96),
                   decoration: _inputDecoration(
                     accent: accent,
+                    brightness: brightness,
                     labelText: widget.l10n.targetTimes,
                   ),
                 ),
                 const SizedBox(height: 14),
                 MenuAnchor(
-                  style: MenuStyle(
-                    backgroundColor: WidgetStateProperty.all(
-                      const Color(0xFF252038).withValues(alpha: 0.97),
-                    ),
-                    surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
-                    shadowColor: WidgetStateProperty.all(
-                      accent.withValues(alpha: 0.42),
-                    ),
-                    elevation: WidgetStateProperty.all(14),
-                    padding: WidgetStateProperty.all(
-                      const EdgeInsets.symmetric(vertical: 6),
-                    ),
-                    shape: WidgetStateProperty.all(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: rim, width: 1.5),
-                      ),
-                    ),
-                  ),
+                  style: menuStyleFor(context, accent: accent),
                   alignmentOffset: const Offset(0, 6),
                   menuChildren: [
                     for (final s in LifeSphere.values)
                       MenuItemButton(
                         onPressed: () => setState(() => _sphere = s),
                         style: MenuItemButton.styleFrom(
-                          foregroundColor: Colors.white,
+                          foregroundColor: textColor,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
                             vertical: 12,
@@ -766,7 +735,7 @@ class _WeekAddGoalFormDialogState extends State<_WeekAddGoalFormDialog> {
                         child: Text(
                           sphereLabel(widget.l10n, s),
                           style: OnboardingTypography.bodyStyle(
-                            Colors.white,
+                            textColor,
                             alpha: 0.95,
                           ),
                         ),
@@ -776,6 +745,7 @@ class _WeekAddGoalFormDialogState extends State<_WeekAddGoalFormDialog> {
                     return InputDecorator(
                       decoration: _inputDecoration(
                         accent: accent,
+                        brightness: brightness,
                         labelText: widget.l10n.sphereFieldLabel,
                       ).copyWith(
                         contentPadding: const EdgeInsetsDirectional.only(
@@ -802,7 +772,7 @@ class _WeekAddGoalFormDialogState extends State<_WeekAddGoalFormDialog> {
                               child: Text(
                                 sphereLabel(widget.l10n, _sphere),
                                 style: OnboardingTypography.bodyStyle(
-                                  Colors.white,
+                                  textColor,
                                   alpha: 0.95,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -823,7 +793,7 @@ class _WeekAddGoalFormDialogState extends State<_WeekAddGoalFormDialog> {
                       child: Text(
                         MaterialLocalizations.of(context).cancelButtonLabel,
                         style: OnboardingTypography.bodyStyle(
-                          Colors.white,
+                          textColor,
                           alpha: 0.92,
                         ),
                       ),
@@ -861,8 +831,7 @@ class _WeekAddGoalFormDialogState extends State<_WeekAddGoalFormDialog> {
                     ),
                   ],
                 ),
-                ],
-              ),
+              ],
             ),
           ),
         ),

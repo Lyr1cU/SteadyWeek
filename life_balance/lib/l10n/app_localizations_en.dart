@@ -311,6 +311,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scheduleNoTime => 'No fixed time';
 
   @override
+  String get routineSelectTime => 'Select time';
+
+  @override
   String get onboardingAppBarTitle => 'Welcome';
 
   @override
@@ -632,6 +635,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get assistantWeekBubble =>
       'Tap a day to open it on Today — your week builds one step at a time.';
+
+  @override
+  String get assistantRoutineBubble =>
+      'Pick days and times here — routines show up on Today like clockwork.';
+
+  @override
+  String get assistantCloseDayBubble =>
+      'A highlight and a reflection — honest words earn you a fair close and XP.';
+
+  @override
+  String get assistantReviewWeekBubble =>
+      'A moment to pause and reflect. Focus on what matters next week.';
 
   @override
   String get assistantScreenTitle => 'Balance buddy';

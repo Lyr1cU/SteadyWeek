@@ -1,6 +1,8 @@
 # Мастер-план: приложение планирования жизни (рутина, цели, отчёты, XP, огонёк, магазин, ассистент)
 
-Документ зафиксирован как **опорная спецификация** для разработки. Цифры и формулы — **стартовые**, их нормально менять после тестов.
+Документ зафиксирован как **опорная спецификация продукта**. Цифры и формулы — **стартовые**, их нормально менять после тестов.
+
+**Стек и порядок разработки (Nest, Neon, SQLite, фазы):** [`DEV_PLAN.md`](./DEV_PLAN.md). Раздел 11–12 ниже про Flutter/Supabase — исторический; не стартовать с них.
 
 ---
 
@@ -416,7 +418,7 @@ no text, game-friendly but calm not aggressive.
 
 ## 17. Следующий шаг после этого документа
 
-**Сделано:** проект Flutter [`life_balance/`](../life_balance/) — EN l10n (`l10n/app_en.arb` → `lib/l10n/`), `ProviderScope`, **go_router** + нижняя навигация (Today / Week / Routine / Shop / Profile), заглушки экранов. Корневой [`README.md`](../README.md) описывает запуск.
+**Сделано:** архив Flutter [`flutter-version/`](../flutter-version/) — EN l10n (`l10n/app_en.arb` → `lib/l10n/`), `ProviderScope`, **go_router** + нижняя навигация. Активный стек: [`ReactNative-version/frontend/`](../ReactNative-version/frontend/) + [`ReactNative-version/backend/`](../ReactNative-version/backend/). Корневой [`README.md`](../README.md) описывает запуск.
 
 **Дальше по порядку:**
 

@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  routineItems RoutineItem[]
+  dayStatuses  DayItemStatus[]
+  appSettings  AppSetting[]
+  userStats    UserStats?
+
+  @@map("users")
+}
+
+model RoutineItem {
+  id                   String    @id
+  userId               String    @map("user_id")
+  title                String
+  sphere               String
+  weekdays             Int
+  sortOrder            Int       @map("sort_order")
+  effort               String
+  isOptional           Boolean   @default(false) @map("is_optional")
+  scheduledMinuteOfDay Int?      @map("scheduled_minute_of_day")
+  createdAt            DateTime  @map("created_at")
+  updatedAt            DateTime  @map("updated_at")
+  deletedAt            DateTime? @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+  @@map("routine_items")
+}
+
+model DayItemStatus {
+  userId        String   @map("user_id")
+  dayKey        String   @map("day_key")
+  routineItemId String   @map("routine_item_id")
+  status        String
+  updatedAt     DateTime @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, dayKey, routineItemId])
+  @@index([userId, updatedAt])
+  @@map("day_item_status")
+}
+
+model AppSetting {
+  userId    String   @map("user_id")
+  key       String
+  value     String
+  updatedAt DateTime @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, key])
+  @@index([userId, updatedAt])
+  @@map("app_settings")
+}
+
+model UserStats {
+  userId          String   @id @map("user_id")
+  totalXp         Int      @default(0) @map("total_xp")
+  currentStreak   Int      @default(0) @map("current_streak")
+  bestStreak      Int      @default(0) @map("best_streak")
+  lastGreenDayKey String?  @map("last_green_day_key")
+  updatedAt       DateTime @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_stats")
+}

@@ -195,17 +195,15 @@ XP **можно считать внутри закрытия дня и не по
 
 ## 8. Фаза 6 — MCP, уведомления, полировка
 
-- [ ] `steadyweek-mcp`: `get_week_schedule`, `get_day(date)`, `upsert_routine_item`, `get_today` → Nest (не прямой Neon service role из Cursor без auth). Любой день, не только today.
-- [ ] Локальные напоминания «закрыть день»
-- [ ] EN строки везде; uk следом (онбординг как в Stitch, но ключи l10n)
-- [ ] Визуальная полировка по Stitch: glow-фон, glass, отступы «как на макете»
-- [ ] Иконка, описание, если понадобится стор
+- [x] `steadyweek-mcp`: `get_week_schedule`, `get_day(date)`, `upsert_routine_item`, `get_today` → Nest (не прямой Neon service role из Cursor без auth). Любой день, не только today.
+- [x] Локальные напоминания «закрыть день» (`expo-notifications`, 21:00)
+- [x] EN строки — каркас `frontend/src/l10n/` (assistant, sync, notifications); uk следом
+- [x] Визуальная полировка: nebula + `GlassSurface` на карточках Today
+- [x] Иконка в `app.json` / assets (стор — описание по необходимости позже)
 
-**Готово когда:** из Cursor меняешь пункт рутины и после sync он на телефоне.
+**Готово когда:** из Cursor меняешь пункт рутины — на телефоне после **auto-sync** (~45 с) или **Sync now** / foreground.
 
----
-
-## 9. Порядок репозитория (папки)
+Прогнать MCP: см. [`docs/reports/PHASE6_REPORT.md`](./reports/PHASE6_REPORT.md).
 
 ```
 SteadyWeek/
@@ -224,8 +222,6 @@ SteadyWeek/
 
 ## 10. Что делать следующим коммитом работы
 
-Фаза 3 по коду закрыта. Дальше: **фаза 4 (цели недели, закрытие дня, отчёты)**.
+Фаза 6 по коду закрыта. Дальше по продукту: **фаза 4 (цели недели, закрытие дня, отчёты)** или **фаза 5 (XP, магазин)** — см. [`DEV_PLAN.md`](./DEV_PLAN.md) §6–7.
 
-Не начинать магазин и XP-полировку, пока не прогнан sync web ↔ phone на живом Neon.
-
-Конфликт «хочу сразу AI» закрывается шаблонами ассистента на фазе 1 и Groq на фазе 3.
+Отчёт фазы 6: [`docs/reports/PHASE6_REPORT.md`](./reports/PHASE6_REPORT.md).

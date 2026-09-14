@@ -14,4 +14,4 @@ export type AppRoute =
   | { name: 'closeDay' }
   | { name: 'weeklyReport' }
   | { name: 'shop' }
-  | { name: 'assistant'; backTab: ShellTab };
+  | { name: 'assistant'; backTab: ShellTab; dayKey?: string };

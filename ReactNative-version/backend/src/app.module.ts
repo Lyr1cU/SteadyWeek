@@ -5,10 +5,19 @@ import { DayStateModule } from './day-state/day-state.module';
 import { HealthController } from './health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { RoutineModule } from './routine/routine.module';
+import { ScheduleModule } from './schedule/schedule.module';
 import { SyncModule } from './sync/sync.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, RoutineModule, DayStateModule, SyncModule, AssistantModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    RoutineModule,
+    DayStateModule,
+    SyncModule,
+    ScheduleModule,
+    AssistantModule,
+  ],
   controllers: [HealthController],
 })
 export class AppModule {}

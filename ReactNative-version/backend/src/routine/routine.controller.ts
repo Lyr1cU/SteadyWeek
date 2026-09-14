@@ -1,6 +1,7 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
+import { UpsertRoutineItemDto } from './routine.dto';
 import { RoutineService } from './routine.service';
 
 @Controller('routine')
@@ -11,5 +12,10 @@ export class RoutineController {
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.routine.list(user.userId);
+  }
+
+  @Post('upsert')
+  upsert(@CurrentUser() user: AuthUser, @Body() dto: UpsertRoutineItemDto) {
+    return this.routine.upsert(user.userId, dto);
   }
 }

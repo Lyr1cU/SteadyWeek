@@ -1,7 +1,7 @@
 /**
  * Design tokens — dark + lavender.
  * Source: Flutter `flutter-version/lib/ui/app_theme.dart` + `design/` mockups.
- * Nebula JPG via `AppBackground`; glass/glow — phase 6.
+ * Nebula JPG via `AppBackground`; glass cards via `GlassSurface`.
  */
 export const theme = {
   assets: {

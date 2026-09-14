@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "steadyweek": {
+      "command": "node",
+      "args": ["E:/PrProjects/SteadyWeek/steadyweek-mcp/dist/index.js"],
+      "env": {
+        "STEADYWEEK_API_URL": "http://127.0.0.1:3000",
+        "STEADYWEEK_EMAIL": "you@example.com",
+        "STEADYWEEK_PASSWORD": "your-app-password"
+      }
+    }
+  }
+}

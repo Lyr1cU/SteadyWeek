@@ -5,20 +5,25 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 import { ApiError } from '../data/api/client';
 import { clearAuthSession, isLoggedIn } from '../data/auth/auth-store';
 import type { SyncStatus } from '../data/sync/sync-engine';
 import { registerSyncHandler } from '../data/sync/schedule-sync';
 import { useRepos } from './repos-context';
 
+/** Pull cloud changes (MCP, other devices) without tapping Sync now. */
+const AUTO_SYNC_INTERVAL_MS = 45_000;
+
 type SyncContextValue = {
   status: SyncStatus;
   syncError: string | null;
   syncRevision: number;
-  triggerSync: () => Promise<void>;
+  triggerSync: (options?: { quiet?: boolean }) => Promise<void>;
   refreshAuth: () => Promise<void>;
   loggedIn: boolean;
 };
@@ -32,14 +37,16 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [syncRevision, setSyncRevision] = useState(0);
 
-  const triggerSync = useCallback(async () => {
+  const triggerSync = useCallback(async (options?: { quiet?: boolean }) => {
     if (!(await isLoggedIn())) {
       setStatus('offline');
       setSyncError(null);
       return;
     }
 
-    setStatus('syncing');
+    if (!options?.quiet) {
+      setStatus('syncing');
+    }
     setSyncError(null);
     try {
       await sync.runSync();
@@ -71,9 +78,37 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, [triggerSync]);
 
   useEffect(() => {
-    registerSyncHandler(triggerSync);
+    registerSyncHandler(() => triggerSync());
     return () => registerSyncHandler(null);
   }, [triggerSync]);
+
+  const appState = useRef<AppStateStatus>(AppState.currentState);
+
+  useEffect(() => {
+    if (!loggedIn) {
+      return;
+    }
+
+    const onAppState = (next: AppStateStatus) => {
+      const wasBackground = appState.current === 'background' || appState.current === 'inactive';
+      appState.current = next;
+      if (wasBackground && next === 'active') {
+        void triggerSync();
+      }
+    };
+
+    const sub = AppState.addEventListener('change', onAppState);
+    const interval = setInterval(() => {
+      if (appState.current === 'active') {
+        void triggerSync({ quiet: true });
+      }
+    }, AUTO_SYNC_INTERVAL_MS);
+
+    return () => {
+      sub.remove();
+      clearInterval(interval);
+    };
+  }, [loggedIn, triggerSync]);
 
   useEffect(() => {
     void refreshAuth();

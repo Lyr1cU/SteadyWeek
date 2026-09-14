@@ -28,7 +28,7 @@ export function MainShell({
   onTab: (tab: ShellTab) => void;
   onCloseDay: () => void;
   onShop: () => void;
-  onAssistant: (backTab: ShellTab) => void;
+  onAssistant: (backTab: ShellTab, dayKey?: string) => void;
   onWeeklyReport: () => void;
   onAuth: () => void;
 }) {
@@ -37,7 +37,11 @@ export function MainShell({
       <View style={styles.root}>
         <View style={styles.body}>
           {tab === 'today' ? (
-            <TodayScreen onCloseDay={onCloseDay} onAssistant={() => onAssistant('today')} />
+            <TodayScreen
+              onCloseDay={onCloseDay}
+              onAssistant={(dayKey) => onAssistant('today', dayKey)}
+              onWeek={() => onTab('week')}
+            />
           ) : tab === 'week' ? (
             <WeekScreen onWeeklyReport={onWeeklyReport} />
           ) : tab === 'routine' ? (

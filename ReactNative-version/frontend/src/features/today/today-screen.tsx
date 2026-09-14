@@ -7,13 +7,16 @@ import { addLocalDays, dateKey, startOfLocalDay } from '../../logic/calendar';
 import { theme } from '../../ui/theme';
 import { TodayDateBar } from './today-date-bar';
 import { TodayItem } from './today-item';
+import { TodayWeeklyGoalsCard } from './today-weekly-goals-card';
 
 export function TodayScreen({
   onCloseDay,
   onAssistant,
+  onWeek,
 }: {
   onCloseDay: () => void;
-  onAssistant: () => void;
+  onAssistant: (dayKey: string) => void;
+  onWeek?: () => void;
 }) {
   const { routine } = useRepos();
   const { syncRevision } = useSync();
@@ -68,6 +71,7 @@ export function TodayScreen({
         onJumpToday={() => setSelectedDate(startOfLocalDay(new Date()))}
       />
       <Text style={styles.title}>{isViewingToday ? 'Today' : 'Day'}</Text>
+      {isViewingToday ? <TodayWeeklyGoalsCard onWeek={onWeek} /> : null}
       {rows.length === 0 ? (
         <Text style={styles.empty}>
           No routine items for this weekday yet. Add them on the Routine tab.
@@ -85,7 +89,7 @@ export function TodayScreen({
         <Text style={styles.ctaText}>Close day</Text>
       </Pressable>
       </ScrollView>
-      <Pressable style={styles.fab} onPress={onAssistant} accessibilityLabel="Open assistant">
+      <Pressable style={styles.fab} onPress={() => onAssistant(selectedKey)} accessibilityLabel="Open assistant">
         <Text style={styles.fabText}>✦</Text>
       </Pressable>
     </View>

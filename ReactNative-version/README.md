@@ -26,3 +26,7 @@ See [`backend/README.md`](backend/README.md) — Neon `DATABASE_URL`, `npm run p
 2. In app: Profile → Sign in (register once).
 3. Edit routine on web or phone → tap **Synced** badge or wait for network reconnect.
 4. Other device pulls changes after login + sync.
+
+## MCP (phase 6)
+
+[`../steadyweek-mcp/`](../steadyweek-mcp/) — Cursor tools against this backend. After `upsert_routine_item`, sync the app.

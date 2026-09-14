@@ -28,6 +28,10 @@ npm run start:dev
 
 Health check: `GET http://localhost:3000/health` → `{ "ok": true, "service": "steadyweek-api" }`
 
+## MCP (Cursor, phase 6)
+
+[`steadyweek-mcp/`](steadyweek-mcp/) — tools `get_today`, `get_day`, `get_week_schedule`, `upsert_routine_item` via Nest JWT (not direct Neon). See [`steadyweek-mcp/README.md`](steadyweek-mcp/README.md).
+
 ## Flutter app (reference only)
 
 - **Code:** [`flutter-version/`](flutter-version/)

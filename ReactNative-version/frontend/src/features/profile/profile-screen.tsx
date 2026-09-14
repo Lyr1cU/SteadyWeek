@@ -4,6 +4,11 @@ import { useSync } from '../../app/sync-context';
 import { useRepos } from '../../app/repos-context';
 import { clearAuthSession, getUserEmail } from '../../data/auth/auth-store';
 import type { UserStats } from '../../domain/models';
+import {
+  closeDayRemindersAvailable,
+  testCloseDayReminder,
+} from '../../notifications/close-day-reminder';
+import { strings } from '../../l10n';
 import { theme } from '../../ui/theme';
 
 export function ProfileScreen({
@@ -34,6 +39,8 @@ export function ProfileScreen({
     await refreshAuth();
   };
 
+  const copy = strings();
+
   return (
     <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Profile</Text>
@@ -48,6 +55,15 @@ export function ProfileScreen({
       <Text style={styles.stat}>XP {userStats?.totalXp ?? 0}</Text>
       <Text style={styles.stat}>Streak {userStats?.currentStreak ?? 0}</Text>
       <Text style={styles.stat}>Best {userStats?.bestStreak ?? 0}</Text>
+      {closeDayRemindersAvailable() ? (
+        <>
+          <Text style={styles.sectionTitle}>Close-day reminder</Text>
+          <Text style={styles.hint}>{copy.profile.reminderStatusOk}</Text>
+          <Pressable style={styles.link} onPress={() => void testCloseDayReminder()}>
+            <Text style={styles.linkText}>{copy.profile.testNotification}</Text>
+          </Pressable>
+        </>
+      ) : null}
       <Pressable style={styles.link} onPress={onShop}>
         <Text style={styles.linkText}>Shop</Text>
       </Pressable>
@@ -82,6 +98,14 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, fontWeight: '700', color: theme.colors.text, marginBottom: 8 },
   subtitle: { color: theme.colors.textMuted, marginBottom: 20 },
   stat: { color: theme.colors.text, fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  sectionTitle: {
+    marginTop: 20,
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 6,
+  },
+  hint: { color: theme.colors.textMuted, lineHeight: 20, marginBottom: 8 },
   link: { marginTop: 12 },
   linkText: { color: theme.colors.accent, fontWeight: '600', fontSize: 16 },
 });

@@ -1,3 +1,15 @@
+/** Parse `yyyy-MM-dd` as local midnight (same as backend dayKey). */
+export function localDayFromKey(dayKey: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dayKey);
+  if (!match) {
+    throw new Error('Invalid dayKey');
+  }
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const d = Number(match[3]);
+  return new Date(y, m - 1, d);
+}
+
 /** Local calendar `yyyy-MM-dd` — same as Flutter `dateKey`. */
 export function dateKey(date: Date): string {
   const y = date.getFullYear();

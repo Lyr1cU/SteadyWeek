@@ -3,9 +3,11 @@ import { useCallback, useState } from 'react';
 import { useSync } from '../../app/sync-context';
 import { useRepos } from '../../app/repos-context';
 import { chatAssistant } from '../../data/api/assistant';
+import { ApiError } from '../../data/api/client';
 import { isLoggedIn } from '../../data/auth/auth-store';
-import { dateKey, startOfLocalDay } from '../../logic/calendar';
+import { dateKey, localDayFromKey, startOfLocalDay } from '../../logic/calendar';
 import { pickAssistantTemplate, todayRowsToContext } from '../../logic/assistant-templates';
+import { strings } from '../../l10n';
 
 export type ChatMessage = {
   id: string;
@@ -18,16 +20,17 @@ function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function useAssistantChat() {
+export function useAssistantChat(contextDayKey?: string) {
   const { routine } = useRepos();
   const { loggedIn } = useSync();
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const copy = strings().assistant;
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: newId(),
       role: 'assistant',
-      text: 'Hi — ask about today’s routine. Offline or busy? I still answer from templates.',
+      text: copy.greeting,
       source: 'template',
     },
   ]);
@@ -44,9 +47,12 @@ export function useAssistantChat() {
       setBusy(true);
 
       try {
-        const today = startOfLocalDay(new Date());
-        const dayKey = dateKey(today);
-        const rows = await routine.loadTodayRows(today);
+        const dayKey =
+          contextDayKey && /^\d{4}-\d{2}-\d{2}$/.test(contextDayKey)
+            ? contextDayKey
+            : dateKey(startOfLocalDay(new Date()));
+        const dayDate = localDayFromKey(dayKey);
+        const rows = await routine.loadTodayRows(dayDate);
         const context = todayRowsToContext(rows);
 
         const online = (await NetInfo.fetch()).isConnected === true;
@@ -65,26 +71,62 @@ export function useAssistantChat() {
               },
             ]);
             return;
-          } catch {
-            // Groq unavailable, rate limited, or auth issue — template fallback.
+          } catch (error) {
+            const hint =
+              error instanceof ApiError
+                ? error.message
+                : error instanceof Error
+                  ? error.message
+                  : 'Request failed';
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: newId(),
+                role: 'assistant',
+                text: `${pickAssistantTemplate(trimmed, context)}\n\n(${hint})`,
+                source: 'template',
+              },
+            ]);
+            return;
           }
         }
 
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: newId(),
-            role: 'assistant',
-            text: pickAssistantTemplate(trimmed, context),
-            source: 'template',
-          },
-        ]);
+        if (!authed) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: newId(),
+              role: 'assistant',
+              text: `${pickAssistantTemplate(trimmed, context)}\n\n(Sign in on Profile for Groq.)`,
+              source: 'template',
+            },
+          ]);
+          return;
+        }
+
+        if (!online) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: newId(),
+              role: 'assistant',
+              text: pickAssistantTemplate(trimmed, context),
+              source: 'template',
+            },
+          ]);
+          return;
+        }
       } finally {
         setBusy(false);
       }
     },
-    [busy, loggedIn, routine],
+    [busy, contextDayKey, loggedIn, routine],
   );
 
-  return { input, setInput, busy, messages, loggedIn, respond };
+  const activeDayKey =
+    contextDayKey && /^\d{4}-\d{2}-\d{2}$/.test(contextDayKey)
+      ? contextDayKey
+      : dateKey(startOfLocalDay(new Date()));
+
+  return { input, setInput, busy, messages, loggedIn, respond, contextDayKey: activeDayKey };
 }

@@ -1,15 +1,18 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSync } from '../app/sync-context';
+import { strings } from '../l10n';
 import { theme } from './theme';
 
-const labels: Record<SyncStatusLabel, string> = {
-  offline: 'Offline',
-  syncing: 'Syncing…',
-  synced: 'Synced',
-  error: 'Sync error',
-};
-
 type SyncStatusLabel = 'offline' | 'syncing' | 'synced' | 'error';
+
+const copy = strings().sync;
+
+const labels: Record<SyncStatusLabel, string> = {
+  offline: copy.offline,
+  syncing: copy.syncing,
+  synced: copy.synced,
+  error: copy.error,
+};
 
 const dotColors: Record<SyncStatusLabel, string> = {
   offline: theme.colors.textSubtle,

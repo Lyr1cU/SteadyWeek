@@ -3,7 +3,13 @@ import type { RoutineItem, RoutineItemInput, TodayRoutineRow } from '../../domai
 import { dateKey } from '../../logic/calendar';
 import { routineRunsOnDate } from '../../logic/weekdays';
 import type { RoutineRepository } from '../ports';
-import { mapDayStatus, mapRoutineRow, newRoutineId, type RoutineRow } from './routine-mapper';
+import {
+  mapDayStatus,
+  mapRoutineRow,
+  tryMapRoutineRow,
+  newRoutineId,
+  type RoutineRow,
+} from './routine-mapper';
 
 const ROUTINE_SELECT = `SELECT id, title, sphere, weekdays, sort_order, effort,
                   is_optional, scheduled_minute_of_day
@@ -17,7 +23,10 @@ export function createSqliteRoutineRepository(db: SQLiteDatabase): RoutineReposi
            WHERE deleted_at IS NULL
            ORDER BY sort_order ASC, title ASC`,
       );
-      return rows.map(mapRoutineRow);
+      return rows.flatMap((row) => {
+        const item = tryMapRoutineRow(row);
+        return item ? [item] : [];
+      });
     },
 
     async createItem(input: RoutineItemInput) {

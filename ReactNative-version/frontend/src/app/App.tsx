@@ -7,6 +7,7 @@ import type { AppRoute } from './routes';
 import { BootScreen } from './boot-screen';
 import { AppNavigator } from './navigator';
 import { SyncProvider } from './sync-context';
+import { initCloseDayReminder } from '../notifications/close-day-reminder';
 
 export default function App() {
   const [repos, setRepos] = useState<AppRepositories | null>(null);
@@ -19,6 +20,7 @@ export default function App() {
         const onboardingComplete = await created.settings.isOnboardingComplete();
         setRepos(created);
         setRoute(onboardingComplete ? { name: 'shell', tab: 'today' } : { name: 'onboarding' });
+        void initCloseDayReminder();
       })
       .catch((error: unknown) => {
         setBootError(error instanceof Error ? error.message : 'Failed to open local database.');

@@ -26,12 +26,9 @@ export function mapDayStatus(value: string | null | undefined): DayItemStatus {
   return 'pending';
 }
 
-export function mapRoutineRow(row: RoutineRow): RoutineItem {
-  if (!isLifeSphereId(row.sphere)) {
-    throw new Error(`Unknown sphere: ${row.sphere}`);
-  }
-  if (!isEffort(row.effort)) {
-    throw new Error(`Unknown effort: ${row.effort}`);
+export function tryMapRoutineRow(row: RoutineRow): RoutineItem | null {
+  if (!isLifeSphereId(row.sphere) || !isEffort(row.effort)) {
+    return null;
   }
 
   return {
@@ -44,6 +41,14 @@ export function mapRoutineRow(row: RoutineRow): RoutineItem {
     isOptional: row.is_optional === 1,
     scheduledMinuteOfDay: row.scheduled_minute_of_day,
   };
+}
+
+export function mapRoutineRow(row: RoutineRow): RoutineItem {
+  const item = tryMapRoutineRow(row);
+  if (!item) {
+    throw new Error(`Unknown sphere or effort: ${row.sphere}/${row.effort}`);
+  }
+  return item;
 }
 
 export function newRoutineId(): string {

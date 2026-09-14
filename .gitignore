@@ -9,3 +9,7 @@ Comms.txt
 Thumbs.db
 .idea/
 *.swp
+
+# Cursor MCP (local credentials)
+.cursor/mcp.json
+debug-025fbd.log

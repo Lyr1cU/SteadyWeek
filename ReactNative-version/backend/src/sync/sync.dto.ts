@@ -2,22 +2,28 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsIn,
   IsInt,
   IsISO8601,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
+import { EFFORTS, LIFE_SPHERES } from '../common/routine-fields';
 
 export class RoutineItemDto {
   @IsString()
   id!: string;
 
   @IsString()
+  @MinLength(1)
+  @MaxLength(120)
   title!: string;
 
-  @IsString()
+  @IsIn([...LIFE_SPHERES])
   sphere!: string;
 
   @IsInt()
@@ -26,7 +32,7 @@ export class RoutineItemDto {
   @IsInt()
   sortOrder!: number;
 
-  @IsString()
+  @IsIn([...EFFORTS])
   effort!: string;
 
   @IsBoolean()

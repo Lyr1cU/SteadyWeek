@@ -10,12 +10,21 @@ import {
   View,
 } from 'react-native';
 import { ASSISTANT_QUICK_PROMPTS } from '../../logic/assistant-templates';
+import { strings } from '../../l10n';
 import { AppBackground } from '../../ui/app-background';
 import { theme } from '../../ui/theme';
 import { useAssistantChat } from './use-assistant-chat';
 
-export function AssistantScreen({ onBack }: { onBack: () => void }) {
-  const { input, setInput, busy, messages, loggedIn, respond } = useAssistantChat();
+export function AssistantScreen({
+  onBack,
+  contextDayKey,
+}: {
+  onBack: () => void;
+  contextDayKey?: string;
+}) {
+  const { input, setInput, busy, messages, loggedIn, respond, contextDayKey: dayKey } =
+    useAssistantChat(contextDayKey);
+  const copy = strings();
 
   return (
     <AppBackground>
@@ -26,13 +35,12 @@ export function AssistantScreen({ onBack }: { onBack: () => void }) {
       >
         <View style={styles.header}>
           <Pressable onPress={onBack} style={styles.backBtn}>
-            <Text style={styles.backText}>Back</Text>
+            <Text style={styles.backText}>{copy.common.back}</Text>
           </Pressable>
           <Text style={styles.title}>Assistant</Text>
+          <Text style={styles.contextDay}>Day context: {dayKey}</Text>
           <Text style={styles.subtitle}>
-            {loggedIn
-              ? 'Groq when online · templates as fallback'
-              : 'Templates from your local today list · sign in for Groq'}
+            {loggedIn ? copy.assistant.groqHint : copy.assistant.templateHint}
           </Text>
         </View>
 
@@ -73,7 +81,7 @@ export function AssistantScreen({ onBack }: { onBack: () => void }) {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="Ask about today…"
+            placeholder={copy.assistant.placeholder}
             placeholderTextColor={theme.colors.textSubtle}
             style={styles.input}
             editable={!busy}
@@ -84,7 +92,7 @@ export function AssistantScreen({ onBack }: { onBack: () => void }) {
             disabled={busy || !input.trim()}
             onPress={() => void respond(input)}
           >
-            <Text style={styles.sendBtnText}>Send</Text>
+            <Text style={styles.sendBtnText}>{copy.common.send}</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -103,6 +111,7 @@ const styles = StyleSheet.create({
   backText: { color: theme.colors.accent, fontWeight: '600', fontSize: 16 },
   title: { fontSize: 32, fontWeight: '700', color: theme.colors.text },
   subtitle: { marginTop: 6, color: theme.colors.textMuted, lineHeight: 20 },
+  contextDay: { marginTop: 4, fontSize: 13, color: theme.colors.accentMuted, fontWeight: '600' },
   messages: { flex: 1 },
   messagesContent: {
     paddingHorizontal: theme.spacing.screenX,

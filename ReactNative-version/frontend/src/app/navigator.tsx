@@ -43,7 +43,10 @@ export function AppNavigator({
       return <ShopScreen onBack={() => onRoute({ name: 'shell', tab: 'profile' })} />;
     case 'assistant':
       return (
-        <AssistantScreen onBack={() => onRoute({ name: 'shell', tab: route.backTab })} />
+        <AssistantScreen
+          contextDayKey={route.dayKey}
+          onBack={() => onRoute({ name: 'shell', tab: route.backTab })}
+        />
       );
     case 'shell':
       return (
@@ -52,7 +55,7 @@ export function AppNavigator({
           onTab={(tab) => onRoute({ name: 'shell', tab })}
           onCloseDay={() => onRoute({ name: 'closeDay' })}
           onShop={() => onRoute({ name: 'shop' })}
-          onAssistant={(backTab) => onRoute({ name: 'assistant', backTab })}
+          onAssistant={(backTab, dayKey) => onRoute({ name: 'assistant', backTab, dayKey })}
           onWeeklyReport={() => onRoute({ name: 'weeklyReport' })}
           onAuth={() => onRoute({ name: 'auth' })}
         />

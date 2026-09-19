@@ -11,7 +11,7 @@ export type AppRoute =
   | { name: 'onboarding' }
   | { name: 'auth' }
   | { name: 'shell'; tab: ShellTab }
-  | { name: 'closeDay' }
-  | { name: 'weeklyReport' }
+  | { name: 'closeDay'; dayKey: string }
+  | { name: 'weeklyReport'; weekKey: string }
   | { name: 'shop' }
   | { name: 'assistant'; backTab: ShellTab; dayKey?: string };

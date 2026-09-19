@@ -2,17 +2,23 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   mapDayStatus,
+  mapDailyReport,
   mapRoutine,
   mapSetting,
   mapStats,
+  mapWeeklyGoal,
+  mapWeeklyReport,
   parseDate,
 } from './sync.mapper';
 import type {
   AppSettingDto,
+  DailyReportDto,
   DayItemStatusDto,
   RoutineItemDto,
   SyncPushDto,
   UserStatsDto,
+  WeeklyGoalDto,
+  WeeklyReportDto,
 } from './sync.dto';
 
 /** Skip push only when server row is strictly newer (LWW). Equal timestamps accept incoming. */
@@ -25,7 +31,15 @@ export class SyncService {
   constructor(private readonly prisma: PrismaService) {}
 
   async pull(userId: string, since: Date) {
-    const [routineItems, dayItemStatus, appSettings, userStats] = await Promise.all([
+    const [
+      routineItems,
+      dayItemStatus,
+      appSettings,
+      userStats,
+      weeklyGoals,
+      dailyReports,
+      weeklyReports,
+    ] = await Promise.all([
       this.prisma.routineItem.findMany({
         where: { userId, updatedAt: { gt: since } },
         orderBy: { updatedAt: 'asc' },
@@ -39,6 +53,18 @@ export class SyncService {
         orderBy: { updatedAt: 'asc' },
       }),
       this.prisma.userStats.findUnique({ where: { userId } }),
+      this.prisma.weeklyGoal.findMany({
+        where: { userId, updatedAt: { gt: since } },
+        orderBy: { updatedAt: 'asc' },
+      }),
+      this.prisma.dailyReport.findMany({
+        where: { userId, updatedAt: { gt: since } },
+        orderBy: { updatedAt: 'asc' },
+      }),
+      this.prisma.weeklyReport.findMany({
+        where: { userId, updatedAt: { gt: since } },
+        orderBy: { updatedAt: 'asc' },
+      }),
     ]);
 
     return {
@@ -46,6 +72,9 @@ export class SyncService {
       dayItemStatus: dayItemStatus.map(mapDayStatus),
       appSettings: appSettings.map(mapSetting),
       userStats: userStats && userStats.updatedAt > since ? mapStats(userStats) : null,
+      weeklyGoals: weeklyGoals.map(mapWeeklyGoal),
+      dailyReports: dailyReports.map(mapDailyReport),
+      weeklyReports: weeklyReports.map(mapWeeklyReport),
       serverTime: new Date().toISOString(),
     };
   }
@@ -62,6 +91,15 @@ export class SyncService {
     }
     if (dto.userStats) {
       await this.upsertStats(userId, dto.userStats);
+    }
+    for (const goal of dto.weeklyGoals ?? []) {
+      await this.upsertWeeklyGoal(userId, goal);
+    }
+    for (const report of dto.dailyReports ?? []) {
+      await this.upsertDailyReport(userId, report);
+    }
+    for (const report of dto.weeklyReports ?? []) {
+      await this.upsertWeeklyReport(userId, report);
     }
 
     return { ok: true, serverTime: new Date().toISOString() };
@@ -190,6 +228,103 @@ export class SyncService {
         currentStreak: row.currentStreak,
         bestStreak: row.bestStreak,
         lastGreenDayKey: row.lastGreenDayKey,
+        updatedAt: incomingAt,
+      },
+    });
+  }
+
+  private async upsertWeeklyGoal(userId: string, goal: WeeklyGoalDto) {
+    const incomingAt = new Date(goal.updatedAt);
+    const existing = await this.prisma.weeklyGoal.findUnique({ where: { id: goal.id } });
+    if (existing && existing.userId !== userId) {
+      return;
+    }
+    if (isStalePush(incomingAt, existing?.updatedAt)) {
+      return;
+    }
+
+    await this.prisma.weeklyGoal.upsert({
+      where: { id: goal.id },
+      create: {
+        id: goal.id,
+        userId,
+        weekKey: goal.weekKey,
+        sphere: goal.sphere,
+        title: goal.title,
+        targetCount: goal.targetCount,
+        progressCount: goal.progressCount,
+        status: goal.status,
+        updatedAt: incomingAt,
+        deletedAt: parseDate(goal.deletedAt),
+      },
+      update: {
+        weekKey: goal.weekKey,
+        sphere: goal.sphere,
+        title: goal.title,
+        targetCount: goal.targetCount,
+        progressCount: goal.progressCount,
+        status: goal.status,
+        updatedAt: incomingAt,
+        deletedAt: parseDate(goal.deletedAt),
+      },
+    });
+  }
+
+  private async upsertDailyReport(userId: string, report: DailyReportDto) {
+    const incomingAt = new Date(report.updatedAt);
+    const existing = await this.prisma.dailyReport.findUnique({
+      where: { userId_dayKey: { userId, dayKey: report.dayKey } },
+    });
+    if (isStalePush(incomingAt, existing?.updatedAt)) {
+      return;
+    }
+
+    await this.prisma.dailyReport.upsert({
+      where: { userId_dayKey: { userId, dayKey: report.dayKey } },
+      create: {
+        userId,
+        dayKey: report.dayKey,
+        mood: report.mood,
+        noteHighlight: report.noteHighlight,
+        noteReflection: report.noteReflection,
+        dayTier: report.dayTier,
+        xpAwarded: report.xpAwarded,
+        closedAt: new Date(report.closedAt),
+        updatedAt: incomingAt,
+      },
+      update: {
+        mood: report.mood,
+        noteHighlight: report.noteHighlight,
+        noteReflection: report.noteReflection,
+        dayTier: report.dayTier,
+        xpAwarded: report.xpAwarded,
+        closedAt: new Date(report.closedAt),
+        updatedAt: incomingAt,
+      },
+    });
+  }
+
+  private async upsertWeeklyReport(userId: string, report: WeeklyReportDto) {
+    const incomingAt = new Date(report.updatedAt);
+    const existing = await this.prisma.weeklyReport.findUnique({
+      where: { userId_weekKey: { userId, weekKey: report.weekKey } },
+    });
+    if (isStalePush(incomingAt, existing?.updatedAt)) {
+      return;
+    }
+
+    await this.prisma.weeklyReport.upsert({
+      where: { userId_weekKey: { userId, weekKey: report.weekKey } },
+      create: {
+        userId,
+        weekKey: report.weekKey,
+        noteWin: report.noteWin,
+        noteFocus: report.noteFocus,
+        updatedAt: incomingAt,
+      },
+      update: {
+        noteWin: report.noteWin,
+        noteFocus: report.noteFocus,
         updatedAt: incomingAt,
       },
     });

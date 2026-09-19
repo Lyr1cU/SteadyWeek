@@ -34,6 +34,9 @@ export async function markAllPending(db: SQLiteDatabase): Promise<void> {
     UPDATE day_item_status SET pending_sync = 1;
     UPDATE app_settings SET pending_sync = 1;
     UPDATE user_stats SET pending_sync = 1;
+    UPDATE weekly_goals SET pending_sync = 1;
+    UPDATE daily_reports SET pending_sync = 1;
+    UPDATE weekly_reports SET pending_sync = 1;
   `);
 }
 
@@ -54,6 +57,9 @@ export async function wipeLocalSchedule(db: SQLiteDatabase): Promise<void> {
   await db.execAsync(`
     DELETE FROM day_item_status;
     DELETE FROM routine_items;
+    DELETE FROM weekly_goals;
+    DELETE FROM daily_reports;
+    DELETE FROM weekly_reports;
   `);
   await resetPullCursor(db);
 }

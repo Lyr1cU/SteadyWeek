@@ -5,7 +5,10 @@ import type {
   TodayRoutineRow,
   UserStats,
   WeeklyGoal,
+  WeeklyGoalInput,
+  WeeklyReport,
 } from '../domain/models';
+import type { DayClosureService } from './day-closure-service';
 
 export type { RoutineItemInput };
 
@@ -24,10 +27,17 @@ export type RoutineRepository = {
 
 export type GoalsRepository = {
   listForWeek(weekKey: string): Promise<WeeklyGoal[]>;
+  add(input: WeeklyGoalInput): Promise<WeeklyGoal>;
+  update(id: string, input: WeeklyGoalInput): Promise<WeeklyGoal>;
+  delete(id: string): Promise<void>;
+  bumpProgress(id: string, delta: number): Promise<WeeklyGoal | null>;
 };
 
 export type ReportsRepository = {
   getDaily(dayKey: string): Promise<DailyReport | null>;
+  listDailyInWeek(weekKey: string, dayKeys: string[]): Promise<DailyReport[]>;
+  getWeekly(weekKey: string): Promise<WeeklyReport | null>;
+  saveWeeklyNotes(weekKey: string, noteWin: string, noteFocus: string): Promise<WeeklyReport>;
 };
 
 export type StatsRepository = {
@@ -50,4 +60,5 @@ export type AppRepositories = {
   stats: StatsRepository;
   settings: SettingsRepository;
   sync: SyncRepository;
+  dayClosure: DayClosureService;
 };

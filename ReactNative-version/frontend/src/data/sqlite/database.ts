@@ -2,6 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { DEFAULT_ROUTINE_SEED } from '../seed/default-routine';
 import { newRoutineId } from './routine-mapper';
+import { migratePhase4Schema } from './phase4-migration';
 import { migrateSyncSchema } from './sync-migration';
 
 let dbPromise: Promise<SQLiteDatabase> | null = null;
@@ -65,6 +66,7 @@ async function openAndMigrate(): Promise<SQLiteDatabase> {
   }
 
   await migrateSyncSchema(db);
+  await migratePhase4Schema(db);
 
   return db;
 }

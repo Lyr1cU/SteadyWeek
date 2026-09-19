@@ -46,6 +46,13 @@ export type DailyReport = {
   closedAt: string;
 };
 
+export type WeeklyReport = {
+  weekKey: string;
+  noteWin: string;
+  noteFocus: string;
+  updatedAt: string;
+};
+
 export type UserStats = {
   totalXp: number;
   currentStreak: number;
@@ -54,6 +61,13 @@ export type UserStats = {
 };
 
 export type { ShopItemCategory } from './shop';
+
+export type WeeklyGoalInput = {
+  weekKey: string;
+  sphere: LifeSphereId;
+  title: string;
+  targetCount?: number;
+};
 
 /** Form payload for create/update — no id or sort order yet. */
 export type RoutineItemInput = {

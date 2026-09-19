@@ -18,18 +18,24 @@ const labels: Record<ShellTab, string> = {
 export function MainShell({
   tab,
   onTab,
+  todayFocusDayKey,
+  onTodayFocusHandled,
   onCloseDay,
   onShop,
   onAssistant,
   onWeeklyReport,
+  onOpenDay,
   onAuth,
 }: {
   tab: ShellTab;
   onTab: (tab: ShellTab) => void;
-  onCloseDay: () => void;
+  todayFocusDayKey: string | null;
+  onTodayFocusHandled: () => void;
+  onCloseDay: (dayKey: string) => void;
   onShop: () => void;
   onAssistant: (backTab: ShellTab, dayKey?: string) => void;
-  onWeeklyReport: () => void;
+  onWeeklyReport: (weekKey: string) => void;
+  onOpenDay: (dayKey: string) => void;
   onAuth: () => void;
 }) {
   return (
@@ -38,12 +44,14 @@ export function MainShell({
         <View style={styles.body}>
           {tab === 'today' ? (
             <TodayScreen
+              focusDayKey={todayFocusDayKey}
+              onFocusDayHandled={onTodayFocusHandled}
               onCloseDay={onCloseDay}
               onAssistant={(dayKey) => onAssistant('today', dayKey)}
               onWeek={() => onTab('week')}
             />
           ) : tab === 'week' ? (
-            <WeekScreen onWeeklyReport={onWeeklyReport} />
+            <WeekScreen onWeeklyReport={onWeeklyReport} onOpenDay={onOpenDay} />
           ) : tab === 'routine' ? (
             <RoutineScreen />
           ) : (

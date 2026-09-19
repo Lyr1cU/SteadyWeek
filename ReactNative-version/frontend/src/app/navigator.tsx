@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AssistantScreen } from '../features/assistant/assistant-screen';
 import { AuthScreen } from '../features/auth/auth-screen';
 import { CloseDayScreen } from '../features/close-day/close-day-screen';
@@ -16,6 +17,7 @@ export function AppNavigator({
   onRoute: (route: AppRoute) => void;
 }) {
   const { settings } = useRepos();
+  const [todayFocusDayKey, setTodayFocusDayKey] = useState<string | null>(null);
 
   switch (route.name) {
     case 'onboarding':
@@ -36,9 +38,19 @@ export function AppNavigator({
         />
       );
     case 'closeDay':
-      return <CloseDayScreen onBack={() => onRoute({ name: 'shell', tab: 'today' })} />;
+      return (
+        <CloseDayScreen
+          dayKey={route.dayKey}
+          onBack={() => onRoute({ name: 'shell', tab: 'today' })}
+        />
+      );
     case 'weeklyReport':
-      return <WeeklyReportScreen onBack={() => onRoute({ name: 'shell', tab: 'week' })} />;
+      return (
+        <WeeklyReportScreen
+          weekKey={route.weekKey}
+          onBack={() => onRoute({ name: 'shell', tab: 'week' })}
+        />
+      );
     case 'shop':
       return <ShopScreen onBack={() => onRoute({ name: 'shell', tab: 'profile' })} />;
     case 'assistant':
@@ -53,10 +65,16 @@ export function AppNavigator({
         <MainShell
           tab={route.tab}
           onTab={(tab) => onRoute({ name: 'shell', tab })}
-          onCloseDay={() => onRoute({ name: 'closeDay' })}
+          todayFocusDayKey={todayFocusDayKey}
+          onTodayFocusHandled={() => setTodayFocusDayKey(null)}
+          onCloseDay={(dayKey) => onRoute({ name: 'closeDay', dayKey })}
           onShop={() => onRoute({ name: 'shop' })}
           onAssistant={(backTab, dayKey) => onRoute({ name: 'assistant', backTab, dayKey })}
-          onWeeklyReport={() => onRoute({ name: 'weeklyReport' })}
+          onWeeklyReport={(weekKey) => onRoute({ name: 'weeklyReport', weekKey })}
+          onOpenDay={(dayKey) => {
+            setTodayFocusDayKey(dayKey);
+            onRoute({ name: 'shell', tab: 'today' });
+          }}
           onAuth={() => onRoute({ name: 'auth' })}
         />
       );

@@ -40,3 +40,9 @@ export function mondayOfWeekContaining(date: Date): Date {
 export function weekKeyFromDate(date: Date): string {
   return dateKey(mondayOfWeekContaining(date));
 }
+
+/** Seven day keys Mon–Sun for the week starting at `weekKey`. */
+export function dayKeysForWeek(weekKey: string): string[] {
+  const monday = localDayFromKey(weekKey);
+  return Array.from({ length: 7 }, (_, i) => dateKey(addLocalDays(monday, i)));
+}

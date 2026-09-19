@@ -26,6 +26,13 @@ export const en = {
     back: 'Back',
     send: 'Send',
   },
+  phase4: {
+    weeklyGoals: 'Weekly goals',
+    closeDay: 'Close day',
+    dayClosed: 'Day closed',
+    weekQuality: 'Day quality',
+    weeklyReport: 'Weekly report',
+  },
 } as const;
 
 export type StringKey = keyof typeof en;

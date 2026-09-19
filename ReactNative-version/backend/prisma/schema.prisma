@@ -13,10 +13,13 @@ model User {
   passwordHash String   @map("password_hash")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  routineItems RoutineItem[]
-  dayStatuses  DayItemStatus[]
-  appSettings  AppSetting[]
-  userStats    UserStats?
+  routineItems  RoutineItem[]
+  dayStatuses   DayItemStatus[]
+  appSettings   AppSetting[]
+  userStats     UserStats?
+  weeklyGoals   WeeklyGoal[]
+  dailyReports  DailyReport[]
+  weeklyReports WeeklyReport[]
 
   @@map("users")
 }
@@ -79,4 +82,54 @@ model UserStats {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_stats")
+}
+
+model WeeklyGoal {
+  id             String    @id
+  userId         String    @map("user_id")
+  weekKey        String    @map("week_key")
+  sphere         String
+  title          String
+  targetCount    Int       @default(1) @map("target_count")
+  progressCount  Int       @default(0) @map("progress_count")
+  status         String    @default("active")
+  updatedAt      DateTime  @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+  @@map("weekly_goals")
+}
+
+model DailyReport {
+  userId          String   @map("user_id")
+  dayKey          String   @map("day_key")
+  mood            Int?
+  noteHighlight   String   @default("") @map("note_highlight")
+  noteReflection  String   @default("") @map("note_reflection")
+  dayTier         String   @map("day_tier")
+  xpAwarded       Int      @default(0) @map("xp_awarded")
+  closedAt        DateTime @map("closed_at")
+  updatedAt       DateTime @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, dayKey])
+  @@index([userId, updatedAt])
+  @@map("daily_reports")
+}
+
+model WeeklyReport {
+  userId    String   @map("user_id")
+  weekKey   String   @map("week_key")
+  noteWin   String   @default("") @map("note_win")
+  noteFocus String   @default("") @map("note_focus")
+  updatedAt DateTime @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, weekKey])
+  @@index([userId, updatedAt])
+  @@map("weekly_reports")
 }

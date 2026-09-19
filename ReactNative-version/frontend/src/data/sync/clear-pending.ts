@@ -32,4 +32,25 @@ export async function clearPendingFlags(db: SQLiteDatabase, payload: PushPayload
       payload.userStats.updatedAt,
     );
   }
+  for (const goal of payload.weeklyGoals) {
+    await db.runAsync(
+      'UPDATE weekly_goals SET pending_sync = 0 WHERE id = ? AND updated_at = ?',
+      goal.id,
+      goal.updatedAt,
+    );
+  }
+  for (const report of payload.dailyReports) {
+    await db.runAsync(
+      'UPDATE daily_reports SET pending_sync = 0 WHERE day_key = ? AND updated_at = ?',
+      report.dayKey,
+      report.updatedAt,
+    );
+  }
+  for (const report of payload.weeklyReports) {
+    await db.runAsync(
+      'UPDATE weekly_reports SET pending_sync = 0 WHERE week_key = ? AND updated_at = ?',
+      report.weekKey,
+      report.updatedAt,
+    );
+  }
 }

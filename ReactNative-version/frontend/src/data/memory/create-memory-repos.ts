@@ -4,6 +4,8 @@ import type {
   TodayRoutineRow,
   UserStats,
   WeeklyGoal,
+  WeeklyGoalInput,
+  WeeklyReport,
 } from '../../domain/models';
 import { dateKey } from '../../logic/calendar';
 import { routineRunsOnDate } from '../../logic/weekdays';
@@ -19,6 +21,7 @@ export function createMemoryRepositories(): AppRepositories {
   const dayStatus = new Map<string, TodayRoutineRow['status']>();
   const goals: WeeklyGoal[] = [];
   const reports = new Map<string, DailyReport>();
+  const weeklyNotes = new Map<string, WeeklyReport>();
   let onboardingComplete = false;
   let stats: UserStats = {
     totalXp: 0,
@@ -88,10 +91,61 @@ export function createMemoryRepositories(): AppRepositories {
       async listForWeek(weekKey) {
         return goals.filter((g) => g.weekKey === weekKey);
       },
+      async add(input: WeeklyGoalInput) {
+        const goal: WeeklyGoal = {
+          id: `g_${goals.length}`,
+          weekKey: input.weekKey,
+          sphere: input.sphere,
+          title: input.title.trim(),
+          targetCount: Math.max(1, input.targetCount ?? 1),
+          progressCount: 0,
+          status: 'active',
+        };
+        goals.push(goal);
+        return goal;
+      },
+      async update(id, input) {
+        const index = goals.findIndex((g) => g.id === id);
+        if (index < 0) throw new Error('goal not found');
+        const next = {
+          ...goals[index],
+          weekKey: input.weekKey,
+          sphere: input.sphere,
+          title: input.title.trim(),
+          targetCount: Math.max(1, input.targetCount ?? goals[index].targetCount),
+        };
+        goals[index] = next;
+        return next;
+      },
+      async delete(id) {
+        const index = goals.findIndex((g) => g.id === id);
+        if (index >= 0) goals.splice(index, 1);
+      },
+      async bumpProgress(id, delta) {
+        const g = goals.find((x) => x.id === id);
+        if (!g) return null;
+        const t = g.targetCount <= 0 ? 1 : g.targetCount;
+        g.progressCount = Math.min(Math.max(0, g.progressCount + delta), t);
+        g.status = g.progressCount >= t ? 'completed' : 'active';
+        return { ...g };
+      },
     },
     reports: {
       async getDaily(dayKeyValue) {
         return reports.get(dayKeyValue) ?? null;
+      },
+      async listDailyInWeek(_weekKey, dayKeys) {
+        return dayKeys
+          .map((k) => reports.get(k))
+          .filter((r): r is DailyReport => r != null);
+      },
+      async getWeekly(weekKey) {
+        return weeklyNotes.get(weekKey) ?? null;
+      },
+      async saveWeeklyNotes(weekKey, noteWin, noteFocus) {
+        const row = { weekKey, noteWin, noteFocus, updatedAt: new Date().toISOString() };
+        weeklyNotes.set(weekKey, row);
+        return row;
       },
     },
     stats: {
@@ -109,6 +163,11 @@ export function createMemoryRepositories(): AppRepositories {
     },
     sync: {
       async runSync() {},
+    },
+    dayClosure: {
+      async submit() {
+        throw new Error('Use SQLite dayClosure in app');
+      },
     },
   };
 }

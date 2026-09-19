@@ -3,37 +3,54 @@ import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { useRepos } from '../../app/repos-context';
 import { useSync } from '../../app/sync-context';
 import type { DayItemStatus, TodayRoutineRow } from '../../domain/models';
-import { addLocalDays, dateKey, startOfLocalDay } from '../../logic/calendar';
+import { addLocalDays, dateKey, localDayFromKey, startOfLocalDay } from '../../logic/calendar';
 import { theme } from '../../ui/theme';
 import { TodayDateBar } from './today-date-bar';
 import { TodayItem } from './today-item';
 import { TodayWeeklyGoalsCard } from './today-weekly-goals-card';
 
 export function TodayScreen({
+  focusDayKey,
+  onFocusDayHandled,
   onCloseDay,
   onAssistant,
   onWeek,
 }: {
-  onCloseDay: () => void;
+  focusDayKey?: string | null;
+  onFocusDayHandled?: () => void;
+  onCloseDay: (dayKey: string) => void;
   onAssistant: (dayKey: string) => void;
   onWeek?: () => void;
 }) {
-  const { routine } = useRepos();
+  const { routine, reports } = useRepos();
   const { syncRevision } = useSync();
   const [rows, setRows] = useState<TodayRoutineRow[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => startOfLocalDay(new Date()));
   const [calendarTodayKey, setCalendarTodayKey] = useState(() => dateKey(new Date()));
+  const [dayClosed, setDayClosed] = useState(false);
 
   const selectedKey = dateKey(selectedDate);
   const isViewingToday = selectedKey === calendarTodayKey;
 
   const reload = useCallback(async () => {
     setRows(await routine.loadTodayRows(selectedDate));
-  }, [routine, selectedDate]);
+    const rep = await reports.getDaily(selectedKey);
+    setDayClosed(rep != null);
+  }, [routine, reports, selectedDate, selectedKey]);
 
   useEffect(() => {
     void reload();
   }, [reload, syncRevision]);
+
+  useEffect(() => {
+    if (!focusDayKey) return;
+    try {
+      setSelectedDate(startOfLocalDay(localDayFromKey(focusDayKey)));
+    } catch {
+      /* ignore invalid */
+    }
+    onFocusDayHandled?.();
+  }, [focusDayKey, onFocusDayHandled]);
 
   useEffect(() => {
     const syncCalendarDay = () => {
@@ -71,7 +88,9 @@ export function TodayScreen({
         onJumpToday={() => setSelectedDate(startOfLocalDay(new Date()))}
       />
       <Text style={styles.title}>{isViewingToday ? 'Today' : 'Day'}</Text>
-      {isViewingToday ? <TodayWeeklyGoalsCard onWeek={onWeek} /> : null}
+      {isViewingToday ? (
+        <TodayWeeklyGoalsCard date={selectedDate} onWeek={onWeek} onChanged={() => void reload()} />
+      ) : null}
       {rows.length === 0 ? (
         <Text style={styles.empty}>
           No routine items for this weekday yet. Add them on the Routine tab.
@@ -85,8 +104,12 @@ export function TodayScreen({
           />
         ))
       )}
-      <Pressable style={styles.cta} onPress={onCloseDay}>
-        <Text style={styles.ctaText}>Close day</Text>
+      <Pressable
+        style={[styles.cta, dayClosed && styles.ctaDisabled]}
+        onPress={() => !dayClosed && onCloseDay(selectedKey)}
+        disabled={dayClosed}
+      >
+        <Text style={styles.ctaText}>{dayClosed ? 'Day closed' : 'Close day'}</Text>
       </Pressable>
       </ScrollView>
       <Pressable style={styles.fab} onPress={() => onAssistant(selectedKey)} accessibilityLabel="Open assistant">
@@ -118,6 +141,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     alignItems: 'center',
   },
+  ctaDisabled: { opacity: 0.45 },
   ctaText: { color: theme.colors.accentOn, fontWeight: '700', fontSize: 16 },
   fab: {
     position: 'absolute',

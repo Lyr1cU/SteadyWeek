@@ -44,43 +44,51 @@ export type PushPayload = {
     lastGreenDayKey: string | null;
     updatedAt: string;
   } | null;
-};
-
-export type PullResponse = {
-  routineItems: Array<{
+  weeklyGoals: Array<{
     id: string;
-    title: string;
+    weekKey: string;
     sphere: string;
-    weekdays: number;
-    sortOrder: number;
-    effort: string;
-    isOptional: boolean;
-    scheduledMinuteOfDay: number | null;
-    createdAt: string;
+    title: string;
+    targetCount: number;
+    progressCount: number;
+    status: string;
     updatedAt: string;
     deletedAt: string | null;
   }>;
-  dayItemStatus: Array<{
+  dailyReports: Array<{
     dayKey: string;
-    routineItemId: string;
-    status: string;
+    mood: number | null;
+    noteHighlight: string;
+    noteReflection: string;
+    dayTier: string;
+    xpAwarded: number;
+    closedAt: string;
     updatedAt: string;
   }>;
-  appSettings: Array<{
-    key: string;
-    value: string;
+  weeklyReports: Array<{
+    weekKey: string;
+    noteWin: string;
+    noteFocus: string;
     updatedAt: string;
   }>;
-  userStats: {
-    totalXp: number;
-    currentStreak: number;
-    bestStreak: number;
-    lastGreenDayKey: string | null;
-    updatedAt: string;
-  } | null;
+};
+
+export type PullResponse = {
+  routineItems: PushPayload['routineItems'];
+  dayItemStatus: PushPayload['dayItemStatus'];
+  appSettings: PushPayload['appSettings'];
+  userStats: PushPayload['userStats'];
+  weeklyGoals: PushPayload['weeklyGoals'];
+  dailyReports: PushPayload['dailyReports'];
+  weeklyReports: PushPayload['weeklyReports'];
   serverTime: string;
 };
 
 export function pullHasCloudData(pull: PullResponse): boolean {
-  return pull.routineItems.length > 0 || pull.dayItemStatus.length > 0;
+  return (
+    pull.routineItems.length > 0 ||
+    pull.dayItemStatus.length > 0 ||
+    pull.weeklyGoals.length > 0 ||
+    pull.dailyReports.length > 0
+  );
 }

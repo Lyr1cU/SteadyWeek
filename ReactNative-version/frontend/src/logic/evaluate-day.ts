@@ -10,7 +10,7 @@ export type DayEvaluation = {
   reportQualityOk: boolean;
 };
 
-/** Pure. Close-day screen will call this in phase 4 — do not import SQLite here. */
+/** Pure. Called from `day-closure-service` — do not import SQLite here. */
 export function evaluateDay(input: {
   rows: TodayRoutineRow[];
   noteHighlight: string;

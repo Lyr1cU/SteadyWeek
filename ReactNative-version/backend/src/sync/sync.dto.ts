@@ -7,12 +7,15 @@ import {
   IsISO8601,
   IsOptional,
   IsString,
+  Matches,
+  Max,
   MaxLength,
   Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
 import { EFFORTS, LIFE_SPHERES } from '../common/routine-fields';
+import { DAY_TIERS, GOAL_STATUSES } from '../common/goal-fields';
 
 export class RoutineItemDto {
   @IsString()
@@ -99,6 +102,90 @@ export class UserStatsDto {
   updatedAt!: string;
 }
 
+export class WeeklyGoalDto {
+  @IsString()
+  id!: string;
+
+  @IsString()
+  weekKey!: string;
+
+  @IsIn([...LIFE_SPHERES])
+  sphere!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  title!: string;
+
+  @IsInt()
+  @Min(1)
+  targetCount!: number;
+
+  @IsInt()
+  @Min(0)
+  progressCount!: number;
+
+  @IsIn([...GOAL_STATUSES])
+  status!: string;
+
+  @IsISO8601()
+  updatedAt!: string;
+
+  @IsOptional()
+  @IsISO8601()
+  deletedAt!: string | null;
+}
+
+export class DailyReportDto {
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  dayKey!: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  mood!: number | null;
+
+  @IsString()
+  @MaxLength(2000)
+  noteHighlight!: string;
+
+  @IsString()
+  @MaxLength(4000)
+  noteReflection!: string;
+
+  @IsIn([...DAY_TIERS])
+  dayTier!: string;
+
+  @IsInt()
+  @Min(0)
+  @Max(500)
+  xpAwarded!: number;
+
+  @IsISO8601()
+  closedAt!: string;
+
+  @IsISO8601()
+  updatedAt!: string;
+}
+
+export class WeeklyReportDto {
+  @IsString()
+  weekKey!: string;
+
+  @IsString()
+  @MaxLength(4000)
+  noteWin!: string;
+
+  @IsString()
+  @MaxLength(4000)
+  noteFocus!: string;
+
+  @IsISO8601()
+  updatedAt!: string;
+}
+
 export class SyncPushDto {
   @IsArray()
   @ValidateNested({ each: true })
@@ -119,4 +206,22 @@ export class SyncPushDto {
   @ValidateNested()
   @Type(() => UserStatsDto)
   userStats!: UserStatsDto | null;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WeeklyGoalDto)
+  weeklyGoals?: WeeklyGoalDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DailyReportDto)
+  dailyReports?: DailyReportDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WeeklyReportDto)
+  weeklyReports?: WeeklyReportDto[];
 }

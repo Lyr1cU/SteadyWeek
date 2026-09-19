@@ -70,3 +70,63 @@ export function mapStats(row: {
     updatedAt: row.updatedAt.toISOString(),
   };
 }
+
+export function mapWeeklyGoal(row: {
+  id: string;
+  weekKey: string;
+  sphere: string;
+  title: string;
+  targetCount: number;
+  progressCount: number;
+  status: string;
+  updatedAt: Date;
+  deletedAt: Date | null;
+}) {
+  return {
+    id: row.id,
+    weekKey: row.weekKey,
+    sphere: row.sphere,
+    title: row.title,
+    targetCount: row.targetCount,
+    progressCount: row.progressCount,
+    status: row.status,
+    updatedAt: row.updatedAt.toISOString(),
+    deletedAt: row.deletedAt?.toISOString() ?? null,
+  };
+}
+
+export function mapDailyReport(row: {
+  dayKey: string;
+  mood: number | null;
+  noteHighlight: string;
+  noteReflection: string;
+  dayTier: string;
+  xpAwarded: number;
+  closedAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    dayKey: row.dayKey,
+    mood: row.mood,
+    noteHighlight: row.noteHighlight,
+    noteReflection: row.noteReflection,
+    dayTier: row.dayTier,
+    xpAwarded: row.xpAwarded,
+    closedAt: row.closedAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+export function mapWeeklyReport(row: {
+  weekKey: string;
+  noteWin: string;
+  noteFocus: string;
+  updatedAt: Date;
+}) {
+  return {
+    weekKey: row.weekKey,
+    noteWin: row.noteWin,
+    noteFocus: row.noteFocus,
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}

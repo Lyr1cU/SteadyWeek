@@ -57,7 +57,7 @@ if ($Connect) {
 
 $deviceLines = (& $adb devices) | Select-Object -Skip 1 | Where-Object { $_ -match "`tdevice$" }
 if ($deviceLines.Count -gt 1) {
-  Write-Host "Multiple devices — using first. To pick one: adb -s SERIAL reverse ..."
+  Write-Host "Multiple devices - using first. To pick one: adb -s SERIAL reverse ..."
 }
 $serial = ($deviceLines | Select-Object -First 1) -replace "`tdevice.*", ""
 if ($serial) {
@@ -69,5 +69,5 @@ if ($serial) {
 $frontend = Split-Path $PSScriptRoot -Parent
 Set-Location $frontend
 Write-Host "Keep npm start running in another terminal (port 8081)."
-Write-Host "Running npm run android:dev (--no-bundler) in $frontend"
+Write-Host 'Running npm run android:dev (--no-bundler) in' $frontend
 npm run android:dev

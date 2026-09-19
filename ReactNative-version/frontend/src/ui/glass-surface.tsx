@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from './theme';
 
 type GlassSurfaceProps = {
   children: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 /** Frosted card on nebula — matches Flutter `ChromeCard` (gradient + rim, no BackdropFilter). */
@@ -26,7 +26,7 @@ const PADDING_KEYS = [
   'paddingRight',
 ] as const satisfies readonly (keyof ViewStyle)[];
 
-function splitShellStyle(style?: ViewStyle): { shell: ViewStyle; padding: ViewStyle } {
+function splitShellStyle(style?: StyleProp<ViewStyle>): { shell: ViewStyle; padding: ViewStyle } {
   const flat = StyleSheet.flatten(style) ?? {};
   const shell: ViewStyle = {};
   const padding: ViewStyle = {};

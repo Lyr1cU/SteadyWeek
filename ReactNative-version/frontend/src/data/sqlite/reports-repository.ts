@@ -10,6 +10,7 @@ type ReportRow = {
   note_reflection: string;
   day_tier: string;
   xp_awarded: number;
+  work_imbalance: number;
   closed_at: string;
 };
 
@@ -35,18 +36,18 @@ function mapDailyRow(row: ReportRow): DailyReport {
     noteReflection: row.note_reflection,
     dayTier: mapDayTier(row.day_tier),
     xpAwarded: row.xp_awarded,
+    workImbalance: row.work_imbalance === 1,
     closedAt: row.closed_at,
   };
 }
 
+const DAILY_SELECT = `SELECT day_key, mood, note_highlight, note_reflection, day_tier, xp_awarded,
+  work_imbalance, closed_at FROM daily_reports`;
+
 export function createSqliteReportsRepository(db: SQLiteDatabase) {
   return {
     async getDaily(dayKey: string): Promise<DailyReport | null> {
-      const row = await db.getFirstAsync<ReportRow>(
-        `SELECT day_key, mood, note_highlight, note_reflection, day_tier, xp_awarded, closed_at
-         FROM daily_reports WHERE day_key = ?`,
-        dayKey,
-      );
+      const row = await db.getFirstAsync<ReportRow>(`${DAILY_SELECT} WHERE day_key = ?`, dayKey);
       return row ? mapDailyRow(row) : null;
     },
 
@@ -56,9 +57,17 @@ export function createSqliteReportsRepository(db: SQLiteDatabase) {
       }
       const placeholders = dayKeys.map(() => '?').join(', ');
       const rows = await db.getAllAsync<ReportRow>(
-        `SELECT day_key, mood, note_highlight, note_reflection, day_tier, xp_awarded, closed_at
-         FROM daily_reports WHERE day_key IN (${placeholders})`,
+        `${DAILY_SELECT} WHERE day_key IN (${placeholders})`,
         ...dayKeys,
+      );
+      return rows.map(mapDailyRow);
+    },
+
+    async listDailyInDayKeyRange(startKey: string, endKey: string): Promise<DailyReport[]> {
+      const rows = await db.getAllAsync<ReportRow>(
+        `${DAILY_SELECT} WHERE day_key >= ? AND day_key <= ? ORDER BY day_key ASC`,
+        startKey,
+        endKey,
       );
       return rows.map(mapDailyRow);
     },

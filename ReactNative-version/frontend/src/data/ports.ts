@@ -36,6 +36,7 @@ export type GoalsRepository = {
 export type ReportsRepository = {
   getDaily(dayKey: string): Promise<DailyReport | null>;
   listDailyInWeek(weekKey: string, dayKeys: string[]): Promise<DailyReport[]>;
+  listDailyInDayKeyRange(startKey: string, endKey: string): Promise<DailyReport[]>;
   getWeekly(weekKey: string): Promise<WeeklyReport | null>;
   saveWeeklyNotes(weekKey: string, noteWin: string, noteFocus: string): Promise<WeeklyReport>;
 };

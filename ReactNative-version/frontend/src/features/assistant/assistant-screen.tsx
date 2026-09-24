@@ -1,19 +1,26 @@
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { localDayFromKey } from '../../logic/calendar';
 import { ASSISTANT_QUICK_PROMPTS } from '../../logic/assistant-templates';
 import { strings } from '../../l10n';
 import { AppBackground } from '../../ui/app-background';
 import { theme } from '../../ui/theme';
+import { useKeyboardBottomInset } from '../../ui/use-keyboard-inset';
+import { AssistantComposer } from './assistant-composer';
+import { AssistantMessageBubble, AssistantTypingBubble } from './assistant-message-bubble';
+import { AssistantQuickPrompts } from './assistant-quick-prompts';
 import { useAssistantChat } from './use-assistant-chat';
+
+function formatDayLabel(dayKey: string): string {
+  const d = localDayFromKey(dayKey);
+  return d.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
 
 export function AssistantScreen({
   onBack,
@@ -25,77 +32,71 @@ export function AssistantScreen({
   const { input, setInput, busy, messages, loggedIn, respond, contextDayKey: dayKey } =
     useAssistantChat(contextDayKey);
   const copy = strings();
+  const keyboardInset = useKeyboardBottomInset();
+  const scrollRef = useRef<ScrollView>(null);
+
+  const scrollToEnd = useCallback(() => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    });
+  }, []);
+
+  useEffect(() => {
+    scrollToEnd();
+  }, [messages, busy, scrollToEnd]);
+
+  const showQuickHint = messages.length === 1 && messages[0]?.role === 'assistant';
 
   return (
     <AppBackground>
-      <KeyboardAvoidingView
-        style={styles.root}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
-      >
+      <View style={styles.root}>
         <View style={styles.header}>
-          <Pressable onPress={onBack} style={styles.backBtn}>
+          <Pressable onPress={onBack} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
+            <Ionicons name="chevron-back" size={22} color={theme.colors.accent} />
             <Text style={styles.backText}>{copy.common.back}</Text>
           </Pressable>
-          <Text style={styles.title}>Assistant</Text>
-          <Text style={styles.contextDay}>Day context: {dayKey}</Text>
+          <Text style={styles.title}>{copy.assistant.title}</Text>
+          <Text style={styles.dayLine}>{copy.assistant.dayContext(formatDayLabel(dayKey))}</Text>
+          <View style={styles.statusPill}>
+            <Text style={styles.statusText}>
+              {loggedIn ? copy.assistant.statusGroq : copy.assistant.statusTemplates}
+            </Text>
+          </View>
           <Text style={styles.subtitle}>
             {loggedIn ? copy.assistant.groqHint : copy.assistant.templateHint}
           </Text>
         </View>
 
-        <ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent}>
+        <ScrollView
+          ref={scrollRef}
+          style={styles.messages}
+          contentContainerStyle={styles.messagesContent}
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={scrollToEnd}
+        >
           {messages.map((msg) => (
-            <View
-              key={msg.id}
-              style={[
-                styles.bubble,
-                msg.role === 'user' ? styles.userBubble : styles.assistantBubble,
-              ]}
-            >
-              <Text style={[styles.bubbleText, msg.role === 'user' && styles.userBubbleText]}>
-                {msg.text}
-              </Text>
-              {msg.role === 'assistant' && msg.source ? (
-                <Text style={styles.sourceTag}>{msg.source === 'groq' ? 'Groq' : 'Template'}</Text>
-              ) : null}
-            </View>
+            <AssistantMessageBubble key={msg.id} msg={msg} />
           ))}
-          {busy ? <ActivityIndicator color={theme.colors.accent} style={styles.loader} /> : null}
+          {busy ? <AssistantTypingBubble /> : null}
+          {showQuickHint && !busy ? (
+            <Text style={styles.quickHint}>{copy.assistant.tryQuickPrompts}</Text>
+          ) : null}
         </ScrollView>
 
-        <View style={styles.quickRow}>
-          {ASSISTANT_QUICK_PROMPTS.map((prompt) => (
-            <Pressable
-              key={prompt}
-              style={styles.quickChip}
-              onPress={() => void respond(prompt)}
-              disabled={busy}
-            >
-              <Text style={styles.quickChipText}>{prompt}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <AssistantQuickPrompts
+          prompts={ASSISTANT_QUICK_PROMPTS}
+          busy={busy}
+          onPrompt={(p) => void respond(p)}
+        />
 
-        <View style={styles.composer}>
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            placeholder={copy.assistant.placeholder}
-            placeholderTextColor={theme.colors.textSubtle}
-            style={styles.input}
-            editable={!busy}
-            onSubmitEditing={() => void respond(input)}
-          />
-          <Pressable
-            style={[styles.sendBtn, busy && styles.sendBtnDisabled]}
-            disabled={busy || !input.trim()}
-            onPress={() => void respond(input)}
-          >
-            <Text style={styles.sendBtnText}>{copy.common.send}</Text>
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
+        <AssistantComposer
+          input={input}
+          busy={busy}
+          bottomInset={keyboardInset}
+          onChange={setInput}
+          onSend={() => void respond(input)}
+        />
+      </View>
     </AppBackground>
   );
 }
@@ -105,84 +106,43 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: theme.spacing.screenX,
     paddingTop: theme.spacing.screenTop,
-    paddingBottom: 12,
+    paddingBottom: 10,
   },
-  backBtn: { marginBottom: 8 },
+  back: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginBottom: 8,
+    alignSelf: 'flex-start',
+  },
   backText: { color: theme.colors.accent, fontWeight: '600', fontSize: 16 },
+  pressed: { opacity: 0.88 },
   title: { fontSize: 32, fontWeight: '700', color: theme.colors.text },
-  subtitle: { marginTop: 6, color: theme.colors.textMuted, lineHeight: 20 },
-  contextDay: { marginTop: 4, fontSize: 13, color: theme.colors.accentMuted, fontWeight: '600' },
+  dayLine: { marginTop: 4, fontSize: 15, fontWeight: '600', color: theme.colors.text },
+  statusPill: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.radius.pill,
+    backgroundColor: 'rgba(202, 184, 255, 0.1)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(202, 184, 255, 0.28)',
+  },
+  statusText: { fontSize: 12, fontWeight: '600', color: theme.colors.accentMuted },
+  subtitle: { marginTop: 8, color: theme.colors.textMuted, lineHeight: 20, fontSize: 13 },
   messages: { flex: 1 },
   messagesContent: {
     paddingHorizontal: theme.spacing.screenX,
-    paddingBottom: 12,
+    paddingTop: 4,
+    paddingBottom: 8,
     gap: 10,
   },
-  bubble: {
-    maxWidth: '88%',
-    borderRadius: theme.radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  userBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: theme.colors.accent,
-  },
-  assistantBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: theme.colors.surfaceHigh,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border,
-  },
-  bubbleText: { color: theme.colors.text, lineHeight: 21 },
-  userBubbleText: { color: theme.colors.accentOn },
-  sourceTag: {
-    marginTop: 6,
-    fontSize: 11,
+  quickHint: {
+    alignSelf: 'center',
+    marginTop: 8,
     color: theme.colors.textSubtle,
-    fontWeight: '600',
+    fontSize: 13,
+    fontStyle: 'italic',
   },
-  loader: { marginTop: 8 },
-  quickRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: theme.spacing.screenX,
-    paddingBottom: 8,
-  },
-  quickChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.surfaceHighest,
-  },
-  quickChipText: { color: theme.colors.textMuted, fontWeight: '600', fontSize: 12 },
-  composer: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: theme.spacing.screenX,
-    paddingBottom: 24,
-    paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.border,
-    backgroundColor: theme.colors.chromeSurface,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: theme.colors.text,
-    backgroundColor: theme.colors.surfaceHigh,
-  },
-  sendBtn: {
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    borderRadius: theme.radius.sm,
-    backgroundColor: theme.colors.accent,
-  },
-  sendBtnDisabled: { opacity: 0.5 },
-  sendBtnText: { color: theme.colors.accentOn, fontWeight: '700' },
 });

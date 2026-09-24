@@ -175,14 +175,15 @@ export async function applyPull(db: SQLiteDatabase, pull: PullResponse): Promise
       await db.runAsync(
         `INSERT INTO daily_reports (
           day_key, mood, note_highlight, note_reflection, day_tier, xp_awarded,
-          closed_at, updated_at, pending_sync
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+          work_imbalance, closed_at, updated_at, pending_sync
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
         ON CONFLICT(day_key) DO UPDATE SET
           mood = excluded.mood,
           note_highlight = excluded.note_highlight,
           note_reflection = excluded.note_reflection,
           day_tier = excluded.day_tier,
           xp_awarded = excluded.xp_awarded,
+          work_imbalance = excluded.work_imbalance,
           closed_at = excluded.closed_at,
           updated_at = excluded.updated_at,
           pending_sync = 0`,
@@ -192,6 +193,7 @@ export async function applyPull(db: SQLiteDatabase, pull: PullResponse): Promise
         report.noteReflection,
         report.dayTier,
         report.xpAwarded,
+        (report.workImbalance ?? false) ? 1 : 0,
         report.closedAt,
         report.updatedAt,
       );

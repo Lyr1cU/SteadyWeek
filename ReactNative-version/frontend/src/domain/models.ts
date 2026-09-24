@@ -43,6 +43,7 @@ export type DailyReport = {
   noteReflection: string;
   dayTier: DayTier;
   xpAwarded: number;
+  workImbalance: boolean;
   closedAt: string;
 };
 

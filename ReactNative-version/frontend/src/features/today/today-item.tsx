@@ -1,6 +1,9 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { DayItemStatus, TodayRoutineRow } from '../../domain/models';
 import { formatTime12h } from '../../logic/time-of-day';
+import { strings } from '../../l10n';
+import { ChromeContextMenu } from '../../ui/chrome-context-menu';
 import { GlassSurface } from '../../ui/glass-surface';
 import { sphereLabel, sphereSymbol } from '../../ui/sphere-ui';
 import { theme } from '../../ui/theme';
@@ -15,6 +18,8 @@ export function TodayItem({
   const done = row.status === 'done';
   const skipped = row.status === 'skipped';
   const symbol = sphereSymbol(row.item.sphere);
+  const copy = strings().routine;
+  const showMenu = !done || skipped;
 
   const toggleDone = () => {
     if (skipped) {
@@ -24,21 +29,29 @@ export function TodayItem({
     onStatus(row.item.id, done ? 'pending' : 'done');
   };
 
-  const openMenu = () => {
-    Alert.alert(row.item.title, undefined, [
-      {
-        text: skipped ? 'Mark pending' : 'Skip for today',
-        onPress: () => onStatus(row.item.id, skipped ? 'pending' : 'skipped'),
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
+  const menuItems = skipped
+    ? [
+        {
+          key: 'undo',
+          label: copy.undoSkip,
+          icon: <Ionicons name="arrow-undo-outline" size={22} color={theme.colors.accent} />,
+          onPress: () => onStatus(row.item.id, 'pending'),
+        },
+      ]
+    : [
+        {
+          key: 'skip',
+          label: copy.skipToday,
+          icon: <Ionicons name="calendar-clear-outline" size={22} color={theme.colors.accent} />,
+          onPress: () => onStatus(row.item.id, 'skipped'),
+        },
+      ];
 
   return (
     <View style={styles.row}>
       <Text style={styles.timeCol}>{formatTime12h(row.item.scheduledMinuteOfDay)}</Text>
       <GlassSurface style={[styles.card, skipped && styles.cardSkipped]}>
-        <Pressable style={styles.cardInner} onPress={toggleDone} onLongPress={openMenu}>
+        <Pressable style={styles.cardInner} onPress={toggleDone}>
           <View style={styles.iconWrap}>
             <Text style={styles.sphereSymbol}>{symbol}</Text>
           </View>
@@ -49,7 +62,9 @@ export function TodayItem({
             >
               {row.item.title}
             </Text>
-            <Text style={styles.subtitle}>{sphereLabel(row.item.sphere)}</Text>
+            <Text style={styles.subtitle}>
+              {skipped ? copy.skippedToday : sphereLabel(row.item.sphere)}
+            </Text>
           </View>
           <Pressable
             onPress={toggleDone}
@@ -58,9 +73,18 @@ export function TodayItem({
           >
             {done ? <Text style={styles.checkMark}>✓</Text> : null}
           </Pressable>
-          <Pressable onPress={openMenu} style={styles.menuBtn} hitSlop={8}>
-            <Text style={styles.menuDots}>⋮</Text>
-          </Pressable>
+          {showMenu ? (
+            <ChromeContextMenu
+              items={menuItems}
+              trigger={(open) => (
+                <Pressable onPress={open} style={styles.menuBtn} hitSlop={8}>
+                  <Ionicons name="ellipsis-vertical" size={18} color={theme.colors.textSubtle} />
+                </Pressable>
+              )}
+            />
+          ) : (
+            <View style={styles.menuPlaceholder} />
+          )}
         </Pressable>
       </GlassSurface>
     </View>
@@ -110,12 +134,6 @@ const styles = StyleSheet.create({
     color: theme.colors.accentOn,
     lineHeight: 18,
   },
-  menuDots: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: theme.colors.textSubtle,
-    lineHeight: 22,
-  },
   textCol: {
     flex: 1,
     minWidth: 0,
@@ -153,5 +171,11 @@ const styles = StyleSheet.create({
   },
   menuBtn: {
     paddingLeft: 2,
+    minWidth: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuPlaceholder: {
+    width: 28,
   },
 });

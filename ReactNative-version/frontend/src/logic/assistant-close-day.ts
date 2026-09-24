@@ -6,7 +6,7 @@ const greenLines = (streak: number) => [
 ];
 
 const yellowLines = [
-  'Yellow day — partial win. Tomorrow is a clean slate.',
+  'Yellow day — partial win. The streak still counts this close.',
   'Not perfect, not empty. That counts.',
 ];
 

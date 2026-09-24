@@ -1,19 +1,19 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { shellTabs, type ShellTab } from '../../app/routes';
+import { useEffect, useRef } from 'react';
+import { StyleSheet, View } from 'react-native';
+import type { ShellTab } from '../../app/routes';
 import { AppBackground } from '../../ui/app-background';
+import { TAB_BAR_CLEARANCE } from '../../ui/motion/constants';
+import { TabCrossfade } from '../../ui/motion/tab-crossfade';
 import { SyncStatusBadge } from '../../ui/sync-status-badge';
-import { theme } from '../../ui/theme';
 import { ProfileScreen } from '../profile/profile-screen';
 import { RoutineScreen } from '../routine/routine-screen';
 import { TodayScreen } from '../today/today-screen';
 import { WeekScreen } from '../week/week-screen';
+import { ShellTabBar } from './shell-tab-bar';
 
-const labels: Record<ShellTab, string> = {
-  today: 'Today',
-  week: 'Week',
-  routine: 'Routine',
-  profile: 'Profile',
-};
+/** Space reserved for floating dock (padding + pill height). */
+const DOCK_LAYOUT_HEIGHT = 78;
+const SYNC_ABOVE_DOCK = 10;
 
 export function MainShell({
   tab,
@@ -38,37 +38,43 @@ export function MainShell({
   onOpenDay: (dayKey: string) => void;
   onAuth: () => void;
 }) {
+  const prevTabRef = useRef<ShellTab | null>(null);
+  const prevTab = prevTabRef.current;
+
+  useEffect(() => {
+    prevTabRef.current = tab;
+  }, [tab]);
+
+  const screen =
+    tab === 'today' ? (
+      <TodayScreen
+        focusDayKey={todayFocusDayKey}
+        onFocusDayHandled={onTodayFocusHandled}
+        onCloseDay={onCloseDay}
+        onAssistant={(dayKey) => onAssistant('today', dayKey)}
+        onWeek={() => onTab('week')}
+      />
+    ) : tab === 'week' ? (
+      <WeekScreen onWeeklyReport={onWeeklyReport} onOpenDay={onOpenDay} />
+    ) : tab === 'routine' ? (
+      <RoutineScreen />
+    ) : (
+      <ProfileScreen onShop={onShop} onAssistant={() => onAssistant('profile')} onAuth={onAuth} />
+    );
+
   return (
     <AppBackground>
       <View style={styles.root}>
         <View style={styles.body}>
-          {tab === 'today' ? (
-            <TodayScreen
-              focusDayKey={todayFocusDayKey}
-              onFocusDayHandled={onTodayFocusHandled}
-              onCloseDay={onCloseDay}
-              onAssistant={(dayKey) => onAssistant('today', dayKey)}
-              onWeek={() => onTab('week')}
-            />
-          ) : tab === 'week' ? (
-            <WeekScreen onWeeklyReport={onWeeklyReport} onOpenDay={onOpenDay} />
-          ) : tab === 'routine' ? (
-            <RoutineScreen />
-          ) : (
-            <ProfileScreen onShop={onShop} onAssistant={() => onAssistant('profile')} onAuth={onAuth} />
-          )}
+          <TabCrossfade tab={tab} prevTab={prevTab}>
+            {screen}
+          </TabCrossfade>
         </View>
-        <SyncStatusBadge />
-        <View style={styles.tabBar}>
-          {shellTabs.map((id) => (
-            <Pressable
-              key={id}
-              onPress={() => onTab(id)}
-              style={[styles.tab, tab === id && styles.tabOn]}
-            >
-              <Text style={[styles.tabLabel, tab === id && styles.tabLabelOn]}>{labels[id]}</Text>
-            </Pressable>
-          ))}
+        <View style={styles.footer} pointerEvents="box-none">
+          <View style={styles.syncAnchor} pointerEvents="box-none">
+            <SyncStatusBadge />
+          </View>
+          <ShellTabBar tab={tab} onTab={onTab} />
         </View>
       </View>
     </AppBackground>
@@ -77,20 +83,19 @@ export function MainShell({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  body: { flex: 1 },
-  tabBar: {
-    flexDirection: 'row',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.border,
-    backgroundColor: theme.colors.chromeSurface,
-    paddingBottom: 20,
+  body: { flex: 1, paddingBottom: TAB_BAR_CLEARANCE },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
-  tabOn: {
-    borderTopWidth: 2,
-    borderTopColor: theme.colors.accent,
-    backgroundColor: theme.colors.accentContainer,
+  syncAnchor: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: DOCK_LAYOUT_HEIGHT + SYNC_ABOVE_DOCK,
+    alignItems: 'center',
+    zIndex: 10,
   },
-  tabLabel: { fontSize: 12, color: theme.colors.textSubtle, fontWeight: '600' },
-  tabLabelOn: { color: theme.colors.accent },
 });

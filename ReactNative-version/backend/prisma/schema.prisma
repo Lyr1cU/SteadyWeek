@@ -110,6 +110,7 @@ model DailyReport {
   noteReflection  String   @default("") @map("note_reflection")
   dayTier         String   @map("day_tier")
   xpAwarded       Int      @default(0) @map("xp_awarded")
+  workImbalance   Boolean  @default(false) @map("work_imbalance")
   closedAt        DateTime @map("closed_at")
   updatedAt       DateTime @map("updated_at")
 

@@ -1,10 +1,10 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import type { DayTier } from '../domain/day-tier';
 import type { DailyReport } from '../domain/models';
-import { addLocalDays, dateKey, startOfLocalDay, weekKeyFromDate } from '../logic/calendar';
+import { dateKey, weekKeyFromDate } from '../logic/calendar';
 import { xpForClosedDay } from '../logic/close-day-xp';
 import { evaluateDay } from '../logic/evaluate-day';
-import { nextStreakAfterClose } from '../logic/streak';
+import { computeStreakFromClosedDayKeys } from '../logic/streak';
 import { createSqliteGoalsRepository } from './sqlite/goals-repository';
 import { createSqliteRoutineRepository } from './sqlite/routine-repository';
 
@@ -75,11 +75,6 @@ export function createDayClosureService(db: SQLiteDatabase) {
         weeklyGoals,
       });
       const xpAwarded = xpForClosedDay(rows, evaluation.tier);
-      const yesterdayKey = dateKey(addLocalDays(startOfLocalDay(input.date), -1));
-
-      // #region agent log
-      fetch('http://127.0.0.1:7934/ingest/5f6ed34f-9edd-4b73-ac4f-bca6f2920a86',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'025fbd'},body:JSON.stringify({sessionId:'025fbd',runId:'phase4',hypothesisId:'A',location:'day-closure-service.ts:submit',message:'close-day computed',data:{tier:evaluation.tier,xpAwarded,routineDone:rows.filter((r)=>r.status==='done').length,dayKey:key},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
 
       let outcome: CloseDayOutcome | null = null;
 
@@ -97,14 +92,15 @@ export function createDayClosureService(db: SQLiteDatabase) {
         await db.runAsync(
           `INSERT INTO daily_reports (
             day_key, mood, note_highlight, note_reflection, day_tier, xp_awarded,
-            closed_at, updated_at, pending_sync
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+            work_imbalance, closed_at, updated_at, pending_sync
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
           key,
           mood,
           noteHighlight,
           noteReflection,
           evaluation.tier,
           xpAwarded,
+          evaluation.workImbalance ? 1 : 0,
           closedAt,
           closedAt,
         );
@@ -123,19 +119,13 @@ export function createDayClosureService(db: SQLiteDatabase) {
           last_green_day_key: null as string | null,
         };
 
-        const streak = nextStreakAfterClose({
-          dayKey: key,
-          yesterdayKey,
-          currentStreak: stats.current_streak,
-          lastGreenDayKey: stats.last_green_day_key,
-        });
+        const closedRows = await db.getAllAsync<{ day_key: string }>(
+          'SELECT day_key FROM daily_reports',
+        );
+        const streak = computeStreakFromClosedDayKeys(closedRows.map((row) => row.day_key));
         const newBest = Math.max(stats.best_streak, streak.currentStreak);
         const newTotal = stats.total_xp + xpAwarded;
         const statsUpdatedAt = new Date().toISOString();
-
-        // #region agent log
-        fetch('http://127.0.0.1:7934/ingest/5f6ed34f-9edd-4b73-ac4f-bca6f2920a86',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'025fbd'},body:JSON.stringify({sessionId:'025fbd',runId:'phase4',hypothesisId:'B',location:'day-closure-service.ts:submit',message:'streak applied',data:{tier:evaluation.tier,prevStreak:stats.current_streak,newStreak:streak.currentStreak,lastGreen:streak.lastGreenDayKey,yesterdayKey},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
 
         await db.runAsync(
           `UPDATE user_stats SET
@@ -161,6 +151,7 @@ export function createDayClosureService(db: SQLiteDatabase) {
             noteReflection,
             dayTier: evaluation.tier,
             xpAwarded,
+            workImbalance: evaluation.workImbalance,
             closedAt,
           },
         };

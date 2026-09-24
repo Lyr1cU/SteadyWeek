@@ -40,6 +40,12 @@ export const theme = {
 
     /** Tab bar / chrome on top of nebula background. */
     chromeSurface: 'rgba(20, 20, 30, 0.92)',
+
+    /** Floating shell tab dock — lavender family, not Tailwind purple. */
+    navDockBorder: 'rgba(202, 184, 255, 0.16)',
+    navActiveGradientStart: '#352D55',
+    navActiveGradientEnd: '#3F385C',
+    navGlow: 'rgba(202, 184, 255, 0.28)',
   },
 
   radius: {

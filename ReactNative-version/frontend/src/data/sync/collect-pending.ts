@@ -41,6 +41,7 @@ type SyncDailyReportRow = {
   note_reflection: string;
   day_tier: string;
   xp_awarded: number;
+  work_imbalance: number;
   closed_at: string;
   updated_at: string;
 };
@@ -79,7 +80,8 @@ export async function collectPending(db: SQLiteDatabase): Promise<PushPayload> {
   );
 
   const dailyRows = await db.getAllAsync<SyncDailyReportRow>(
-    `SELECT day_key, mood, note_highlight, note_reflection, day_tier, xp_awarded, closed_at, updated_at
+    `SELECT day_key, mood, note_highlight, note_reflection, day_tier, xp_awarded, work_imbalance,
+            closed_at, updated_at
      FROM daily_reports WHERE pending_sync = 1`,
   );
 
@@ -140,6 +142,7 @@ export async function collectPending(db: SQLiteDatabase): Promise<PushPayload> {
       noteReflection: row.note_reflection,
       dayTier: row.day_tier,
       xpAwarded: row.xp_awarded,
+      workImbalance: row.work_imbalance === 1,
       closedAt: row.closed_at,
       updatedAt: row.updated_at,
     })),

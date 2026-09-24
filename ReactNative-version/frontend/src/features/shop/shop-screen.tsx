@@ -4,7 +4,7 @@ export function ShopScreen({ onBack }: { onBack: () => void }) {
   return (
     <PlaceholderRoute
       title="Shop"
-      subtitle="XP cosmetics only. No IAP."
+      subtitle="Store soon · XP cosmetics only. No IAP."
       onBack={onBack}
     />
   );

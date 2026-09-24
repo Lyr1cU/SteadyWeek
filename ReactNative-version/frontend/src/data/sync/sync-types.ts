@@ -62,6 +62,7 @@ export type PushPayload = {
     noteReflection: string;
     dayTier: string;
     xpAwarded: number;
+    workImbalance: boolean;
     closedAt: string;
     updatedAt: string;
   }>;

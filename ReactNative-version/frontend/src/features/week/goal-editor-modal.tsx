@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { LIFE_SPHERES, type LifeSphereId } from '../../domain/life-sphere';
 import type { WeeklyGoal, WeeklyGoalInput } from '../../domain/models';
+import { FadeInDownView, FadeInView } from '../../ui/motion/enter';
 import { theme } from '../../ui/theme';
 import { sphereLabel } from '../../ui/sphere-ui';
 import { useKeyboardBottomInset } from '../../ui/use-keyboard-inset';
@@ -54,9 +55,10 @@ export function GoalEditorModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType="none" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View
+        <FadeInView style={styles.backdropFill} />
+        <FadeInDownView
           style={[
             styles.sheet,
             keyboardInset > 0 && { marginBottom: keyboardInset, maxHeight: '85%' },
@@ -106,7 +108,7 @@ export function GoalEditorModal({
             </Pressable>
           </View>
           </ScrollView>
-        </View>
+        </FadeInDownView>
       </View>
     </Modal>
   );
@@ -115,8 +117,11 @@ export function GoalEditorModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
+  },
+  backdropFill: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   sheet: {
     backgroundColor: theme.colors.surface,

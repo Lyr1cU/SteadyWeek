@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRepos } from '../../app/repos-context';
 import { useSync } from '../../app/sync-context';
 import type { DayItemStatus, TodayRoutineRow } from '../../domain/models';
 import { addLocalDays, dateKey, localDayFromKey, startOfLocalDay } from '../../logic/calendar';
+import { AnimatedPressable } from '../../ui/motion/animated-pressable';
+import { StaggerFadeIn } from '../../ui/motion/stagger-fade-in';
 import { theme } from '../../ui/theme';
 import { TodayDateBar } from './today-date-bar';
 import { TodayItem } from './today-item';
@@ -80,41 +82,52 @@ export function TodayScreen({
   return (
     <View style={styles.root}>
       <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
-      <TodayDateBar
-        date={selectedDate}
-        isToday={isViewingToday}
-        onPrev={() => setSelectedDate((d) => addLocalDays(d, -1))}
-        onNext={() => setSelectedDate((d) => addLocalDays(d, 1))}
-        onJumpToday={() => setSelectedDate(startOfLocalDay(new Date()))}
-      />
-      <Text style={styles.title}>{isViewingToday ? 'Today' : 'Day'}</Text>
+      <StaggerFadeIn index={0}>
+        <TodayDateBar
+          date={selectedDate}
+          isToday={isViewingToday}
+          onPrev={() => setSelectedDate((d) => addLocalDays(d, -1))}
+          onNext={() => setSelectedDate((d) => addLocalDays(d, 1))}
+          onJumpToday={() => setSelectedDate(startOfLocalDay(new Date()))}
+        />
+      </StaggerFadeIn>
+      <StaggerFadeIn index={1}>
+        <Text style={styles.title}>{isViewingToday ? 'Today' : 'Day'}</Text>
+      </StaggerFadeIn>
       {isViewingToday ? (
-        <TodayWeeklyGoalsCard date={selectedDate} onWeek={onWeek} onChanged={() => void reload()} />
+        <StaggerFadeIn index={2}>
+          <TodayWeeklyGoalsCard date={selectedDate} onWeek={onWeek} onChanged={() => void reload()} />
+        </StaggerFadeIn>
       ) : null}
       {rows.length === 0 ? (
-        <Text style={styles.empty}>
-          No routine items for this weekday yet. Add them on the Routine tab.
-        </Text>
+        <StaggerFadeIn index={3}>
+          <Text style={styles.empty}>
+            No routine items for this weekday yet. Add them on the Routine tab.
+          </Text>
+        </StaggerFadeIn>
       ) : (
-        rows.map((row) => (
-          <TodayItem
-            key={row.item.id}
-            row={row}
-            onStatus={(id, status) => void setStatus(id, status)}
-          />
+        rows.map((row, index) => (
+          <StaggerFadeIn key={row.item.id} index={index + 3}>
+            <TodayItem
+              row={row}
+              onStatus={(id, status) => void setStatus(id, status)}
+            />
+          </StaggerFadeIn>
         ))
       )}
-      <Pressable
-        style={[styles.cta, dayClosed && styles.ctaDisabled]}
-        onPress={() => !dayClosed && onCloseDay(selectedKey)}
-        disabled={dayClosed}
-      >
-        <Text style={styles.ctaText}>{dayClosed ? 'Day closed' : 'Close day'}</Text>
-      </Pressable>
+      <StaggerFadeIn index={rows.length + 4}>
+        <AnimatedPressable
+          style={[styles.cta, dayClosed && styles.ctaDisabled]}
+          onPress={() => !dayClosed && onCloseDay(selectedKey)}
+          disabled={dayClosed}
+        >
+          <Text style={styles.ctaText}>{dayClosed ? 'Day closed' : 'Close day'}</Text>
+        </AnimatedPressable>
+      </StaggerFadeIn>
       </ScrollView>
-      <Pressable style={styles.fab} onPress={() => onAssistant(selectedKey)} accessibilityLabel="Open assistant">
+      <AnimatedPressable style={styles.fab} onPress={() => onAssistant(selectedKey)} accessibilityLabel="Open assistant">
         <Text style={styles.fabText}>✦</Text>
-      </Pressable>
+      </AnimatedPressable>
     </View>
   );
 }

@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRepos } from '../../app/repos-context';
 import { useSync } from '../../app/sync-context';
 import type { RoutineItem, RoutineItemInput } from '../../domain/models';
 import { formatMinuteOfDay, parseTimeInput } from '../../logic/time-of-day';
+import { strings } from '../../l10n';
+import { ChromeConfirmDialog } from '../../ui/chrome-confirm-dialog';
+import { AnimatedPressable } from '../../ui/motion/animated-pressable';
+import { StaggerFadeIn } from '../../ui/motion/stagger-fade-in';
 import { theme } from '../../ui/theme';
-import { RoutineForm } from './routine-form';
+import { RoutineEditorModal } from './routine-editor-modal';
 import { RoutineList } from './routine-list';
 
 const emptyDraft = (): RoutineItemInput => ({
@@ -31,11 +35,15 @@ function draftFromItem(item: RoutineItem): RoutineItemInput {
 export function RoutineScreen() {
   const { routine } = useRepos();
   const { syncRevision } = useSync();
+  const copy = strings().routine;
   const [items, setItems] = useState<RoutineItem[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<RoutineItemInput>(emptyDraft);
   const [timeText, setTimeText] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<RoutineItem | null>(null);
 
   const reload = useCallback(async () => {
     setItems(await routine.listTemplates());
@@ -45,11 +53,21 @@ export function RoutineScreen() {
     void reload();
   }, [reload, syncRevision]);
 
-  const resetForm = () => {
+  const closeEditor = () => {
+    setEditorOpen(false);
     setEditingId(null);
     setDraft(emptyDraft());
     setTimeText('');
     setError(null);
+    setSaving(false);
+  };
+
+  const openAdd = () => {
+    setEditingId(null);
+    setDraft(emptyDraft());
+    setTimeText('');
+    setError(null);
+    setEditorOpen(true);
   };
 
   const startEdit = (item: RoutineItem) => {
@@ -59,21 +77,22 @@ export function RoutineScreen() {
       item.scheduledMinuteOfDay == null ? '' : formatMinuteOfDay(item.scheduledMinuteOfDay),
     );
     setError(null);
+    setEditorOpen(true);
   };
 
   const saveDraft = async () => {
     if (!draft.title.trim()) {
-      setError('Title is required.');
+      setError(copy.errorTitleRequired);
       return;
     }
     if (draft.weekdays === 0) {
-      setError('Pick at least one weekday.');
+      setError(copy.errorWeekdayRequired);
       return;
     }
 
     const parsedTime = parseTimeInput(timeText);
     if (timeText.trim() && parsedTime == null) {
-      setError('Time must be HH:MM (24h) or empty.');
+      setError(copy.errorTimeInvalid);
       return;
     }
 
@@ -82,52 +101,87 @@ export function RoutineScreen() {
       scheduledMinuteOfDay: parsedTime,
     };
 
+    setSaving(true);
     try {
       if (editingId) {
         await routine.updateItem(editingId, payload);
       } else {
         await routine.createItem(payload);
       }
-      resetForm();
+      closeEditor();
       await reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save item.');
+      setError(e instanceof Error ? e.message : copy.errorSaveFailed);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const removeItem = async (id: string) => {
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setDeleteTarget(null);
     try {
       await routine.deleteItem(id);
       if (editingId === id) {
-        resetForm();
+        closeEditor();
       }
       await reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not delete item.');
+      setError(e instanceof Error ? e.message : copy.errorDeleteFailed);
+      setEditorOpen(true);
     }
   };
 
   return (
-    <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Routine</Text>
-      <Text style={styles.subtitle}>Weekly template: title, weekdays, time, sphere, effort.</Text>
-      <RoutineList
-        items={items}
-        editingId={editingId}
-        onEdit={startEdit}
-        onDelete={(id) => void removeItem(id)}
-      />
-      <RoutineForm
+    <>
+      <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
+        <StaggerFadeIn index={0}>
+          <Text style={styles.title}>{copy.screenTitle}</Text>
+          <View style={styles.subHeader}>
+            <Text style={styles.subtitle}>{copy.subtitle}</Text>
+            <AnimatedPressable onPress={openAdd} style={styles.addPill}>
+              <Text style={styles.addPillText}>+ {copy.addItem}</Text>
+            </AnimatedPressable>
+          </View>
+        </StaggerFadeIn>
+        {items.length > 0 ? (
+          <Text style={styles.count}>{copy.templateCount(items.length)}</Text>
+        ) : null}
+
+        <RoutineList
+          items={items}
+          editingId={editingId}
+          onEdit={startEdit}
+          onDelete={setDeleteTarget}
+          onExpandAdd={openAdd}
+        />
+      </ScrollView>
+
+      <RoutineEditorModal
+        visible={editorOpen}
+        editing={editingId != null}
         draft={draft}
         timeText={timeText}
         error={error}
-        editing={editingId != null}
+        saving={saving}
         onDraft={setDraft}
         onTimeText={setTimeText}
+        onClose={closeEditor}
         onSave={() => void saveDraft()}
-        onCancel={resetForm}
       />
-    </ScrollView>
+
+      <ChromeConfirmDialog
+        visible={deleteTarget != null}
+        title={copy.deleteTitle}
+        message={deleteTarget ? copy.deleteMessage(deleteTarget.title) : ''}
+        confirmLabel={copy.deleteConfirm}
+        cancelLabel={copy.cancel}
+        destructive
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    </>
   );
 }
 
@@ -136,8 +190,26 @@ const styles = StyleSheet.create({
   content: {
     padding: theme.spacing.screenX,
     paddingTop: theme.spacing.screenTop,
-    paddingBottom: 40,
+    paddingBottom: 24,
   },
   title: { fontSize: 32, fontWeight: '700', color: theme.colors.text },
-  subtitle: { marginTop: 6, marginBottom: 20, color: theme.colors.textMuted },
+  subHeader: {
+    marginTop: 6,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  subtitle: { color: theme.colors.textMuted, flex: 1, minWidth: 120 },
+  addPill: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(202, 184, 255, 0.35)',
+    backgroundColor: 'rgba(53, 45, 85, 0.45)',
+  },
+  addPillText: { color: theme.colors.accent, fontWeight: '700', fontSize: 14 },
+  count: { marginTop: 8, marginBottom: 12, color: theme.colors.textSubtle, fontWeight: '600', fontSize: 14 },
 });

@@ -163,6 +163,10 @@ export class DailyReportDto {
   @Max(500)
   xpAwarded!: number;
 
+  @IsOptional()
+  @IsBoolean()
+  workImbalance?: boolean;
+
   @IsISO8601()
   closedAt!: string;
 

@@ -279,6 +279,8 @@ export class SyncService {
       return;
     }
 
+    const workImbalance = report.workImbalance ?? false;
+
     await this.prisma.dailyReport.upsert({
       where: { userId_dayKey: { userId, dayKey: report.dayKey } },
       create: {
@@ -289,6 +291,7 @@ export class SyncService {
         noteReflection: report.noteReflection,
         dayTier: report.dayTier,
         xpAwarded: report.xpAwarded,
+        workImbalance,
         closedAt: new Date(report.closedAt),
         updatedAt: incomingAt,
       },
@@ -298,6 +301,7 @@ export class SyncService {
         noteReflection: report.noteReflection,
         dayTier: report.dayTier,
         xpAwarded: report.xpAwarded,
+        workImbalance,
         closedAt: new Date(report.closedAt),
         updatedAt: incomingAt,
       },

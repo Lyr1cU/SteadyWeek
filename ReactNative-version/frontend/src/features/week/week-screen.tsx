@@ -1,20 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRepos } from '../../app/repos-context';
 import { useSync } from '../../app/sync-context';
 import type { WeeklyGoal } from '../../domain/models';
 import {
   addLocalDays,
   dayKeysForWeek,
-  localDayFromKey,
   startOfLocalDay,
   weekKeyFromDate,
 } from '../../logic/calendar';
+import { strings } from '../../l10n';
 import { GlassSurface } from '../../ui/glass-surface';
-import { sphereLabel } from '../../ui/sphere-ui';
+import { AnimatedPressable } from '../../ui/motion/animated-pressable';
+import { StaggerFadeIn } from '../../ui/motion/stagger-fade-in';
 import { theme } from '../../ui/theme';
 import { GoalEditorModal } from './goal-editor-modal';
+import { WeekGoalCard } from './week-goal-card';
+import { WeekNavBar } from './week-nav-bar';
 import { WeekQualityStrip } from './week-quality-strip';
+import { WeekReportCta } from './week-report-cta';
+
+/** Match floating tab dock clearance in main-shell. */
 
 export function WeekScreen({
   onWeeklyReport,
@@ -33,10 +39,9 @@ export function WeekScreen({
   );
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<WeeklyGoal | null>(null);
+  const copy = strings().week;
 
   const dayKeys = useMemo(() => dayKeysForWeek(weekKey), [weekKey]);
-  const thisWeekKey = weekKeyFromDate(new Date());
-  const isThisWeek = weekKey === thisWeekKey;
 
   const reload = useCallback(async () => {
     const goalList = await goals.listForWeek(weekKey);
@@ -69,67 +74,56 @@ export function WeekScreen({
   return (
     <>
       <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
-        <View style={styles.weekNav}>
-          <Pressable onPress={() => setAnchor((d) => addLocalDays(d, -7))}>
-            <Text style={styles.navBtn}>←</Text>
-          </Pressable>
-          <View style={styles.weekNavCenter}>
-            <Text style={styles.kicker}>{isThisWeek ? 'This week' : 'Week'}</Text>
-            <Text style={styles.weekRange}>
-              {localDayFromKey(weekKey).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-              })}
-              {' – '}
-              {addLocalDays(localDayFromKey(weekKey), 6).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-              })}
-            </Text>
+        <StaggerFadeIn index={0}>
+          <WeekNavBar
+            anchor={anchor}
+            onPrev={() => setAnchor((d) => addLocalDays(d, -7))}
+            onNext={() => setAnchor((d) => addLocalDays(d, 7))}
+            onThisWeek={() => setAnchor(startOfLocalDay(new Date()))}
+          />
+        </StaggerFadeIn>
+
+        <StaggerFadeIn index={1}>
+          <Text style={styles.title}>{copy.weekLabel}</Text>
+        </StaggerFadeIn>
+
+        <StaggerFadeIn index={2}>
+          <WeekQualityStrip weekKey={weekKey} tierByDayKey={tierByDayKey} onDayPress={onOpenDay} />
+        </StaggerFadeIn>
+
+        <StaggerFadeIn index={3}>
+          <View style={styles.goalsHeader}>
+            <Text style={styles.goalsTitle}>{copy.weeklyGoals}</Text>
+            <AnimatedPressable onPress={openAdd} style={styles.addPill}>
+              <Text style={styles.addPillText}>+ {copy.addGoal}</Text>
+            </AnimatedPressable>
           </View>
-          <Pressable onPress={() => setAnchor((d) => addLocalDays(d, 7))}>
-            <Text style={styles.navBtn}>→</Text>
-          </Pressable>
-        </View>
-        <Text style={styles.title}>Week</Text>
-
-        <WeekQualityStrip weekKey={weekKey} tierByDayKey={tierByDayKey} onDayPress={onOpenDay} />
-
-        <View style={styles.goalsHeader}>
-          <Text style={styles.goalsTitle}>Weekly goals</Text>
-          <Pressable onPress={openAdd}>
-            <Text style={styles.addLink}>+ Add</Text>
-          </Pressable>
-        </View>
+        </StaggerFadeIn>
 
         {items.length === 0 ? (
-          <Text style={styles.empty}>No goals yet. Add one or two for this week.</Text>
+          <StaggerFadeIn index={4}>
+            <GlassSurface style={styles.emptyCard}>
+              <Text style={styles.emptyText}>{copy.emptyGoals}</Text>
+              <AnimatedPressable onPress={openAdd} style={styles.emptyLink}>
+                <Text style={styles.emptyLinkText}>+ {copy.addGoal}</Text>
+              </AnimatedPressable>
+            </GlassSurface>
+          </StaggerFadeIn>
         ) : (
-          items.map((goal) => {
-            const t = goal.targetCount <= 0 ? 1 : goal.targetCount;
-            const p = Math.min(goal.progressCount, t);
-            return (
-              <GlassSurface key={goal.id} style={styles.card}>
-                <View style={styles.cardInner}>
-                  <Pressable onPress={() => openEdit(goal)}>
-                    <Text style={styles.cardTitle}>{goal.title}</Text>
-                    <Text style={styles.meta}>
-                      {sphereLabel(goal.sphere)} · {p}/{t}
-                      {goal.status === 'completed' ? ' · done' : ''}
-                    </Text>
-                  </Pressable>
-                  <Pressable onPress={() => void goals.delete(goal.id).then(() => reload())}>
-                    <Text style={styles.delete}>Remove</Text>
-                  </Pressable>
-                </View>
-              </GlassSurface>
-            );
-          })
+          items.map((goal, index) => (
+            <StaggerFadeIn key={goal.id} index={index + 4}>
+              <WeekGoalCard
+                goal={goal}
+                onEdit={() => openEdit(goal)}
+                onRemove={() => void goals.delete(goal.id).then(() => reload())}
+              />
+            </StaggerFadeIn>
+          ))
         )}
 
-        <Pressable style={styles.link} onPress={() => onWeeklyReport(weekKey)}>
-          <Text style={styles.linkText}>Weekly report</Text>
-        </Pressable>
+        <StaggerFadeIn index={items.length + 5}>
+          <WeekReportCta onPress={() => onWeeklyReport(weekKey)} />
+        </StaggerFadeIn>
       </ScrollView>
 
       <GoalEditorModal
@@ -155,13 +149,8 @@ const styles = StyleSheet.create({
   content: {
     padding: theme.spacing.screenX,
     paddingTop: theme.spacing.screenTop,
-    paddingBottom: 40,
+    paddingBottom: 24,
   },
-  weekNav: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  navBtn: { fontSize: 22, color: theme.colors.accent, paddingHorizontal: 8 },
-  weekNavCenter: { flex: 1, alignItems: 'center' },
-  kicker: { color: theme.colors.textSubtle, fontSize: 13 },
-  weekRange: { color: theme.colors.textMuted, fontWeight: '600' },
   title: { fontSize: 32, fontWeight: '700', color: theme.colors.text, marginBottom: 16 },
   goalsHeader: {
     flexDirection: 'row',
@@ -170,13 +159,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   goalsTitle: { fontSize: 18, fontWeight: '700', color: theme.colors.text },
-  addLink: { color: theme.colors.accent, fontWeight: '700' },
-  empty: { color: theme.colors.textMuted, marginBottom: 16 },
-  card: { marginBottom: 10, borderRadius: 16 },
-  cardInner: { padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  cardTitle: { fontSize: 16, fontWeight: '600', color: theme.colors.text },
-  meta: { marginTop: 4, color: theme.colors.textMuted, fontSize: 13 },
-  delete: { color: theme.colors.textSubtle, fontSize: 13 },
-  link: { marginTop: 16 },
-  linkText: { color: theme.colors.accent, fontWeight: '600', fontSize: 16 },
+  addPill: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(202, 184, 255, 0.35)',
+    backgroundColor: 'rgba(53, 45, 85, 0.45)',
+  },
+  addPillText: { color: theme.colors.accent, fontWeight: '700', fontSize: 14 },
+  emptyCard: { padding: 16, borderRadius: theme.radius.lg, marginBottom: 4 },
+  emptyText: { color: theme.colors.textMuted, lineHeight: 21 },
+  emptyLink: { marginTop: 12, alignSelf: 'flex-start' },
+  emptyLinkText: { color: theme.colors.accent, fontWeight: '700', fontSize: 15 },
 });

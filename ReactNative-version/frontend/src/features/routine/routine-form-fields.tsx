@@ -2,43 +2,46 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LIFE_SPHERES } from '../../domain/life-sphere';
 import type { Effort, RoutineItemInput } from '../../domain/models';
 import { toggleWeekdayMask, WEEKDAY_LABELS, weekdayMaskFromIndex } from '../../logic/weekdays';
+import { strings } from '../../l10n';
+import { sphereLabel } from '../../ui/sphere-ui';
 import { theme } from '../../ui/theme';
 
 const EFFORTS: Effort[] = ['light', 'medium', 'heavy'];
 
-export function RoutineForm({
+function effortCopy(effort: Effort): string {
+  const copy = strings().routine;
+  if (effort === 'light') return copy.effortLight;
+  if (effort === 'heavy') return copy.effortHeavy;
+  return copy.effortMedium;
+}
+
+export function RoutineFormFields({
   draft,
   timeText,
   error,
-  editing,
   onDraft,
   onTimeText,
-  onSave,
-  onCancel,
 }: {
   draft: RoutineItemInput;
   timeText: string;
   error: string | null;
-  editing: boolean;
   onDraft: (next: RoutineItemInput) => void;
   onTimeText: (value: string) => void;
-  onSave: () => void;
-  onCancel: () => void;
 }) {
-  return (
-    <View style={styles.form}>
-      <Text style={styles.formTitle}>{editing ? 'Edit item' : 'Add item'}</Text>
+  const copy = strings().routine;
 
-      <Text style={styles.label}>Title</Text>
+  return (
+    <>
+      <Text style={styles.label}>{copy.labelTitle}</Text>
       <TextInput
         value={draft.title}
         onChangeText={(title) => onDraft({ ...draft, title })}
-        placeholder="Deep work block"
+        placeholder={copy.titlePlaceholder}
         placeholderTextColor={theme.colors.textSubtle}
         style={styles.input}
       />
 
-      <Text style={styles.label}>Weekdays</Text>
+      <Text style={styles.label}>{copy.labelWeekdays}</Text>
       <View style={styles.weekdayRow}>
         {WEEKDAY_LABELS.map((label, index) => {
           const on = (draft.weekdays & weekdayMaskFromIndex(index)) !== 0;
@@ -46,25 +49,25 @@ export function RoutineForm({
             <Pressable
               key={label}
               onPress={() => onDraft({ ...draft, weekdays: toggleWeekdayMask(draft.weekdays, index) })}
-              style={[styles.weekdayChip, on && styles.weekdayChipOn]}
+              style={[styles.chip, on && styles.chipOn]}
             >
-              <Text style={[styles.weekdayChipText, on && styles.weekdayChipTextOn]}>{label}</Text>
+              <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
             </Pressable>
           );
         })}
       </View>
 
-      <Text style={styles.label}>Time (optional, HH:MM)</Text>
+      <Text style={styles.label}>{copy.labelTime}</Text>
       <TextInput
         value={timeText}
         onChangeText={onTimeText}
-        placeholder="09:00"
+        placeholder={copy.timePlaceholder}
         placeholderTextColor={theme.colors.textSubtle}
         style={styles.input}
         keyboardType="numbers-and-punctuation"
       />
 
-      <Text style={styles.label}>Sphere</Text>
+      <Text style={styles.label}>{copy.labelSphere}</Text>
       <View style={styles.chipRow}>
         {LIFE_SPHERES.map((sphere) => {
           const on = draft.sphere === sphere;
@@ -74,13 +77,13 @@ export function RoutineForm({
               onPress={() => onDraft({ ...draft, sphere })}
               style={[styles.chip, on && styles.chipOn]}
             >
-              <Text style={[styles.chipText, on && styles.chipTextOn]}>{sphere}</Text>
+              <Text style={[styles.chipText, on && styles.chipTextOn]}>{sphereLabel(sphere)}</Text>
             </Pressable>
           );
         })}
       </View>
 
-      <Text style={styles.label}>Effort</Text>
+      <Text style={styles.label}>{copy.labelEffort}</Text>
       <View style={styles.chipRow}>
         {EFFORTS.map((effort) => {
           const on = draft.effort === effort;
@@ -88,9 +91,9 @@ export function RoutineForm({
             <Pressable
               key={effort}
               onPress={() => onDraft({ ...draft, effort })}
-              style={[styles.chip, on && styles.chipOn]}
+              style={[styles.chip, on && styles.chipOn, effort === 'heavy' && on && styles.chipHeavyOn]}
             >
-              <Text style={[styles.chipText, on && styles.chipTextOn]}>{effort}</Text>
+              <Text style={[styles.chipText, on && styles.chipTextOn]}>{effortCopy(effort)}</Text>
             </Pressable>
           );
         })}
@@ -101,36 +104,17 @@ export function RoutineForm({
         style={styles.optionalRow}
       >
         <View style={[styles.checkbox, draft.isOptional && styles.checkboxOn]} />
-        <Text style={styles.optionalText}>Optional item</Text>
+        <Text style={styles.optionalText}>{copy.optionalItem}</Text>
       </Pressable>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <View style={styles.formActions}>
-        <Pressable style={styles.primaryBtn} onPress={onSave}>
-          <Text style={styles.primaryBtnText}>{editing ? 'Save changes' : 'Add item'}</Text>
-        </Pressable>
-        {editing ? (
-          <Pressable style={styles.secondaryBtn} onPress={onCancel}>
-            <Text style={styles.secondaryBtnText}>Cancel</Text>
-          </Pressable>
-        ) : null}
-      </View>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  form: {
-    backgroundColor: theme.colors.surfaceHigh,
-    borderRadius: theme.radius.md,
-    padding: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border,
-  },
-  formTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, color: theme.colors.text },
   label: {
-    marginTop: 10,
+    marginTop: 12,
     marginBottom: 6,
     color: theme.colors.textMuted,
     fontWeight: '600',
@@ -138,31 +122,30 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.sm,
+    borderColor: 'rgba(202, 184, 255, 0.2)',
+    borderRadius: theme.radius.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: 'rgba(8, 7, 14, 0.35)',
     color: theme.colors.text,
   },
   weekdayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  weekdayChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.surfaceHighest,
-  },
-  weekdayChipOn: { backgroundColor: theme.colors.accentContainer },
-  weekdayChipText: { color: theme.colors.textMuted, fontWeight: '600', fontSize: 12 },
-  weekdayChipTextOn: { color: theme.colors.accent },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.surfaceHighest,
+    backgroundColor: 'rgba(53, 45, 85, 0.45)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border,
   },
-  chipOn: { backgroundColor: theme.colors.accentContainer },
+  chipOn: {
+    backgroundColor: theme.colors.accentContainer,
+    borderColor: 'rgba(202, 184, 255, 0.45)',
+  },
+  chipHeavyOn: {
+    backgroundColor: 'rgba(202, 184, 255, 0.22)',
+  },
   chipText: { color: theme.colors.textMuted, fontWeight: '600', fontSize: 13 },
   chipTextOn: { color: theme.colors.accent },
   optionalRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 10 },
@@ -177,19 +160,4 @@ const styles = StyleSheet.create({
   checkboxOn: { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
   optionalText: { color: theme.colors.textMuted },
   error: { marginTop: 12, color: theme.colors.danger },
-  formActions: { flexDirection: 'row', gap: 10, marginTop: 16, flexWrap: 'wrap' },
-  primaryBtn: {
-    backgroundColor: theme.colors.accent,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: theme.radius.sm,
-  },
-  primaryBtnText: { color: theme.colors.accentOn, fontWeight: '700' },
-  secondaryBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: theme.radius.sm,
-    backgroundColor: theme.colors.surfaceHighest,
-  },
-  secondaryBtnText: { color: theme.colors.textMuted, fontWeight: '600' },
 });

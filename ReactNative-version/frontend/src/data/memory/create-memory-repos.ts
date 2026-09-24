@@ -139,6 +139,11 @@ export function createMemoryRepositories(): AppRepositories {
           .map((k) => reports.get(k))
           .filter((r): r is DailyReport => r != null);
       },
+      async listDailyInDayKeyRange(startKey, endKey) {
+        return [...reports.values()].filter(
+          (r) => r.dayKey >= startKey && r.dayKey <= endKey,
+        );
+      },
       async getWeekly(weekKey) {
         return weeklyNotes.get(weekKey) ?? null;
       },

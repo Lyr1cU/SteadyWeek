@@ -42,6 +42,8 @@ export function withAutoSyncReports(reports: ReportsRepository): ReportsReposito
   return {
     getDaily: (dayKey) => reports.getDaily(dayKey),
     listDailyInWeek: (weekKey, dayKeys) => reports.listDailyInWeek(weekKey, dayKeys),
+    listDailyInDayKeyRange: (startKey, endKey) =>
+      reports.listDailyInDayKeyRange(startKey, endKey),
     getWeekly: (weekKey) => reports.getWeekly(weekKey),
     saveWeeklyNotes: (weekKey, noteWin, noteFocus) =>
       afterLocalWrite(() => reports.saveWeeklyNotes(weekKey, noteWin, noteFocus)),

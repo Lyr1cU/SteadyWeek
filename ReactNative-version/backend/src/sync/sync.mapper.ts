@@ -102,6 +102,7 @@ export function mapDailyReport(row: {
   noteReflection: string;
   dayTier: string;
   xpAwarded: number;
+  workImbalance: boolean;
   closedAt: Date;
   updatedAt: Date;
 }) {
@@ -112,6 +113,7 @@ export function mapDailyReport(row: {
     noteReflection: row.noteReflection,
     dayTier: row.dayTier,
     xpAwarded: row.xpAwarded,
+    workImbalance: row.workImbalance,
     closedAt: row.closedAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

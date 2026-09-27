@@ -1,0 +1,29 @@
+# SteadyWeek Nest API → Render Free Web Service
+# Database: Neon (set DATABASE_URL in Dashboard — not Render Postgres).
+# Apply: https://dashboard.render.com/blueprint/new?repo=https://github.com/Lyr1cU/SteadyWeek
+
+services:
+  - type: web
+    name: steadyweek-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: ReactNative-version/backend
+    buildCommand: npm ci && npm run build
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: ASSISTANT_RATE_LIMIT_PER_MIN
+        value: "10"

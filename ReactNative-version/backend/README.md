@@ -27,3 +27,7 @@ Day state: `GET /day-state?dayKey=yyyy-MM-dd`
 Assistant (JWT): `POST /assistant/chat` body `{ message, dayKey? }` → `{ reply, source: 'groq' | 'template' }`
 
 Optional in `.env`: `GROQ_API_KEY`, `GROQ_MODEL` (default `openai/gpt-oss-20b`), `ASSISTANT_RATE_LIMIT_PER_MIN` (default 10). Without Groq key the API returns templates from today's routine context.
+
+## Production (Render Free)
+
+See [`docs/DEPLOY_RENDER.md`](../../docs/DEPLOY_RENDER.md) — `render.yaml` at repo root, Neon `DATABASE_URL`, health `/health`.

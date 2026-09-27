@@ -67,4 +67,12 @@ Rebuild **release APK** (URL is baked in at build time).
 
 ## Manual deploy (without Blueprint)
 
-Dashboard → New → Web Service → repo `Lyr1cU/SteadyWeek`, root directory `ReactNative-version/backend`, build `npm ci && npm run build`, start `npm run start:prod`, add env vars above, plan **Free**, health check `/health`.
+Dashboard → New → Web Service → repo `Lyr1cU/SteadyWeek`, root directory `ReactNative-version/backend`, build:
+
+```bash
+npm ci --include=dev && npm run build && npm prune --omit=dev
+```
+
+start `npm run start:prod` (or migrate in start: `npx prisma migrate deploy && npm run start:prod`), add env vars above, plan **Free**, health check `/health`.
+
+**If `nest: not found`:** Render sets `NODE_ENV=production`, so `npm ci` skips devDependencies. Use `--include=dev` in the build command (see above).

@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
-import { AppState, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, StyleSheet, Text, View } from 'react-native';
+import { GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import { useRepos } from '../../app/repos-context';
 import { useSync } from '../../app/sync-context';
 import type { DayItemStatus, TodayRoutineRow } from '../../domain/models';
 import { addLocalDays, dateKey, localDayFromKey, startOfLocalDay } from '../../logic/calendar';
+import { ListSkeleton } from '../../ui/list-skeleton';
 import { AnimatedPressable } from '../../ui/motion/animated-pressable';
+import { TAB_BAR_CLEARANCE } from '../../ui/motion/constants';
+import { useShellEnterKey } from '../../ui/motion/shell-pane';
+import { useHorizontalPageSwipe } from '../../ui/motion/use-horizontal-page-swipe';
 import { StaggerFadeIn } from '../../ui/motion/stagger-fade-in';
 import { theme } from '../../ui/theme';
 import { TodayDateBar } from './today-date-bar';
@@ -24,20 +29,33 @@ export function TodayScreen({
   onAssistant: (dayKey: string) => void;
   onWeek?: () => void;
 }) {
+  const enterKey = useShellEnterKey();
   const { routine, reports } = useRepos();
   const { syncRevision } = useSync();
   const [rows, setRows] = useState<TodayRoutineRow[]>([]);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => startOfLocalDay(new Date()));
   const [calendarTodayKey, setCalendarTodayKey] = useState(() => dateKey(new Date()));
   const [dayClosed, setDayClosed] = useState(false);
+  const selectedKeyRef = useRef<string | null>(null);
 
   const selectedKey = dateKey(selectedDate);
   const isViewingToday = selectedKey === calendarTodayKey;
+  const ready = loadedKey === selectedKey;
+  const revealed = enterKey >= 0;
+  const showBody = ready && revealed;
+  selectedKeyRef.current = selectedKey;
 
   const reload = useCallback(async () => {
-    setRows(await routine.loadTodayRows(selectedDate));
-    const rep = await reports.getDaily(selectedKey);
+    const key = selectedKey;
+    const next = await routine.loadTodayRows(selectedDate);
+    const rep = await reports.getDaily(key);
+    if (selectedKeyRef.current !== key) {
+      return;
+    }
+    setRows(next);
     setDayClosed(rep != null);
+    setLoadedKey(key);
   }, [routine, reports, selectedDate, selectedKey]);
 
   useEffect(() => {
@@ -74,61 +92,71 @@ export function TodayScreen({
     return () => sub.remove();
   }, []);
 
+  const goPrevDay = useCallback(() => setSelectedDate((d) => addLocalDays(d, -1)), []);
+  const goNextDay = useCallback(() => setSelectedDate((d) => addLocalDays(d, 1)), []);
+  const pageSwipe = useHorizontalPageSwipe(goPrevDay, goNextDay);
+
   const setStatus = async (routineItemId: string, status: DayItemStatus) => {
     await routine.setDayStatus(selectedDate, routineItemId, status);
     await reload();
   };
 
   return (
+    <GestureDetector gesture={pageSwipe}>
     <View style={styles.root}>
       <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
-      <StaggerFadeIn index={0}>
         <TodayDateBar
           date={selectedDate}
           isToday={isViewingToday}
-          onPrev={() => setSelectedDate((d) => addLocalDays(d, -1))}
-          onNext={() => setSelectedDate((d) => addLocalDays(d, 1))}
+          onPrev={goPrevDay}
+          onNext={goNextDay}
           onJumpToday={() => setSelectedDate(startOfLocalDay(new Date()))}
         />
-      </StaggerFadeIn>
-      <StaggerFadeIn index={1}>
-        <Text style={styles.title}>{isViewingToday ? 'Today' : 'Day'}</Text>
-      </StaggerFadeIn>
-      {isViewingToday ? (
-        <StaggerFadeIn index={2}>
-          <TodayWeeklyGoalsCard date={selectedDate} onWeek={onWeek} onChanged={() => void reload()} />
-        </StaggerFadeIn>
-      ) : null}
-      {rows.length === 0 ? (
-        <StaggerFadeIn index={3}>
-          <Text style={styles.empty}>
-            No routine items for this weekday yet. Add them on the Routine tab.
-          </Text>
-        </StaggerFadeIn>
-      ) : (
-        rows.map((row, index) => (
-          <StaggerFadeIn key={row.item.id} index={index + 3}>
-            <TodayItem
-              row={row}
-              onStatus={(id, status) => void setStatus(id, status)}
-            />
-          </StaggerFadeIn>
-        ))
-      )}
-      <StaggerFadeIn index={rows.length + 4}>
-        <AnimatedPressable
-          style={[styles.cta, dayClosed && styles.ctaDisabled]}
-          onPress={() => !dayClosed && onCloseDay(selectedKey)}
-          disabled={dayClosed}
-        >
-          <Text style={styles.ctaText}>{dayClosed ? 'Day closed' : 'Close day'}</Text>
-        </AnimatedPressable>
-      </StaggerFadeIn>
+        {showBody ? (
+          <View key={`${selectedKey}-${enterKey}`} style={styles.dayBody}>
+            <StaggerFadeIn index={0}>
+              <Text style={styles.title}>{isViewingToday ? 'Today' : 'Day'}</Text>
+            </StaggerFadeIn>
+            {isViewingToday ? (
+              <StaggerFadeIn index={1}>
+                <TodayWeeklyGoalsCard date={selectedDate} onWeek={onWeek} onChanged={() => void reload()} />
+              </StaggerFadeIn>
+            ) : null}
+            {rows.length === 0 ? (
+              <StaggerFadeIn index={2}>
+                <Text style={styles.empty}>
+                  No routine items for this weekday yet. Add them on the Routine tab.
+                </Text>
+              </StaggerFadeIn>
+            ) : (
+              rows.map((row, index) => (
+                <StaggerFadeIn key={row.item.id} index={index + 2}>
+                  <TodayItem
+                    row={row}
+                    onStatus={(id, status) => void setStatus(id, status)}
+                  />
+                </StaggerFadeIn>
+              ))
+            )}
+            <StaggerFadeIn index={rows.length + 3}>
+              <AnimatedPressable
+                style={[styles.cta, dayClosed && styles.ctaDisabled]}
+                onPress={() => !dayClosed && onCloseDay(selectedKey)}
+                disabled={dayClosed}
+              >
+                <Text style={styles.ctaText}>{dayClosed ? 'Day closed' : 'Close day'}</Text>
+              </AnimatedPressable>
+            </StaggerFadeIn>
+          </View>
+        ) : (
+          <ListSkeleton variant="today" rows={6} />
+        )}
       </ScrollView>
       <AnimatedPressable style={styles.fab} onPress={() => onAssistant(selectedKey)} accessibilityLabel="Open assistant">
         <Text style={styles.fabText}>✦</Text>
       </AnimatedPressable>
     </View>
+    </GestureDetector>
   );
 }
 
@@ -138,8 +166,9 @@ const styles = StyleSheet.create({
   content: {
     padding: theme.spacing.screenX,
     paddingTop: theme.spacing.screenTop,
-    paddingBottom: 40,
+    paddingBottom: TAB_BAR_CLEARANCE + 72,
   },
+  dayBody: { flexGrow: 1 },
   title: {
     fontSize: 32,
     fontWeight: '700',
@@ -159,7 +188,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: theme.spacing.screenX,
-    bottom: 16,
+    bottom: TAB_BAR_CLEARANCE - 22,
     width: 52,
     height: 52,
     borderRadius: 26,

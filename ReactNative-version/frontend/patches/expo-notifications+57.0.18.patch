@@ -1,0 +1,40 @@
+diff --git a/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/notifications/presentation/builders/ExpoNotificationBuilder.kt b/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/notifications/presentation/builders/ExpoNotificationBuilder.kt
+index 610d303..774ed99 100644
+--- a/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/notifications/presentation/builders/ExpoNotificationBuilder.kt
++++ b/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/notifications/presentation/builders/ExpoNotificationBuilder.kt
+@@ -1,7 +1,9 @@
+ package expo.modules.notifications.notifications.presentation.builders
+ 
+ import android.app.Notification
++import android.app.PendingIntent
+ import android.content.Context
++import android.content.Intent
+ import android.content.pm.PackageManager
+ import android.graphics.Bitmap
+ import android.graphics.BitmapFactory
+@@ -147,6 +149,25 @@ open class ExpoNotificationBuilder(
+       )
+     )
+ 
++    if (content.body?.optBoolean("fullScreen", false) == true) {
++      val launch = Intent().apply {
++        setClassName(context, "expo.modules.steadyweekalarms.ReminderAlarmActivity")
++        putExtra("title", content.title)
++        putExtra("body", content.text)
++        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
++      }
++      val fullScreenPending = PendingIntent.getActivity(
++        context,
++        notification.notificationRequest.identifier.hashCode(),
++        launch,
++        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
++      )
++      builder.setFullScreenIntent(fullScreenPending, true)
++      builder.setCategory(NotificationCompat.CATEGORY_ALARM)
++      builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
++      builder.setPriority(NotificationCompat.PRIORITY_MAX)
++    }
++
+     if (notificationContent.containsImage()) {
+       val bitmap = notificationContent.getImage(context)
+       bitmap?.let { builder.setLargeIcon(it) }

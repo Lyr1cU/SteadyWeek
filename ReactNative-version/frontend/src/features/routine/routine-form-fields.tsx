@@ -5,6 +5,8 @@ import { toggleWeekdayMask, WEEKDAY_LABELS, weekdayMaskFromIndex } from '../../l
 import { strings } from '../../l10n';
 import { sphereLabel } from '../../ui/sphere-ui';
 import { theme } from '../../ui/theme';
+import { TodayTaskCheckbox } from '../today/today-task-checkbox';
+import { RoutineTimeField } from './routine-time-field';
 
 const EFFORTS: Effort[] = ['light', 'medium', 'heavy'];
 
@@ -17,16 +19,12 @@ function effortCopy(effort: Effort): string {
 
 export function RoutineFormFields({
   draft,
-  timeText,
   error,
   onDraft,
-  onTimeText,
 }: {
   draft: RoutineItemInput;
-  timeText: string;
   error: string | null;
   onDraft: (next: RoutineItemInput) => void;
-  onTimeText: (value: string) => void;
 }) {
   const copy = strings().routine;
 
@@ -58,13 +56,9 @@ export function RoutineFormFields({
       </View>
 
       <Text style={styles.label}>{copy.labelTime}</Text>
-      <TextInput
-        value={timeText}
-        onChangeText={onTimeText}
-        placeholder={copy.timePlaceholder}
-        placeholderTextColor={theme.colors.textSubtle}
-        style={styles.input}
-        keyboardType="numbers-and-punctuation"
+      <RoutineTimeField
+        minute={draft.scheduledMinuteOfDay}
+        onChange={(scheduledMinuteOfDay) => onDraft({ ...draft, scheduledMinuteOfDay })}
       />
 
       <Text style={styles.label}>{copy.labelSphere}</Text>
@@ -99,13 +93,19 @@ export function RoutineFormFields({
         })}
       </View>
 
-      <Pressable
-        onPress={() => onDraft({ ...draft, isOptional: !draft.isOptional })}
-        style={styles.optionalRow}
-      >
-        <View style={[styles.checkbox, draft.isOptional && styles.checkboxOn]} />
-        <Text style={styles.optionalText}>{copy.optionalItem}</Text>
-      </Pressable>
+      <View style={styles.optionalRow}>
+        <TodayTaskCheckbox
+          checked={draft.isOptional}
+          skipped={false}
+          onPress={() => onDraft({ ...draft, isOptional: !draft.isOptional })}
+        />
+        <Pressable
+          onPress={() => onDraft({ ...draft, isOptional: !draft.isOptional })}
+          style={styles.optionalLabelTap}
+        >
+          <Text style={styles.optionalText}>{copy.optionalItem}</Text>
+        </Pressable>
+      </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </>
@@ -149,15 +149,7 @@ const styles = StyleSheet.create({
   chipText: { color: theme.colors.textMuted, fontWeight: '600', fontSize: 13 },
   chipTextOn: { color: theme.colors.accent },
   optionalRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 10 },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: theme.colors.outline,
-    backgroundColor: theme.colors.surface,
-  },
-  checkboxOn: { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
+  optionalLabelTap: { flex: 1 },
   optionalText: { color: theme.colors.textMuted },
   error: { marginTop: 12, color: theme.colors.danger },
 });

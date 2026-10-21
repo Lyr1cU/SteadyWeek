@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MCP_SYNC_NUDGE_SETTING_KEY } from '../common/mcp-constants';
 import {
   mapDayStatus,
   mapDailyReport,
@@ -103,6 +104,86 @@ export class SyncService {
     }
 
     return { ok: true, serverTime: new Date().toISOString() };
+  }
+
+  async getCloudRevision(userId: string) {
+    const [
+      routineMax,
+      statusMax,
+      settingsMax,
+      statsRow,
+      goalsMax,
+      dailyMax,
+      weeklyMax,
+    ] = await Promise.all([
+      this.prisma.routineItem.aggregate({
+        where: { userId },
+        _max: { updatedAt: true },
+      }),
+      this.prisma.dayItemStatus.aggregate({
+        where: { userId },
+        _max: { updatedAt: true },
+      }),
+      this.prisma.appSetting.aggregate({
+        where: { userId },
+        _max: { updatedAt: true },
+      }),
+      this.prisma.userStats.findUnique({ where: { userId }, select: { updatedAt: true } }),
+      this.prisma.weeklyGoal.aggregate({
+        where: { userId },
+        _max: { updatedAt: true },
+      }),
+      this.prisma.dailyReport.aggregate({
+        where: { userId },
+        _max: { updatedAt: true },
+      }),
+      this.prisma.weeklyReport.aggregate({
+        where: { userId },
+        _max: { updatedAt: true },
+      }),
+    ]);
+
+    const candidates = [
+      routineMax._max.updatedAt,
+      statusMax._max.updatedAt,
+      settingsMax._max.updatedAt,
+      statsRow?.updatedAt,
+      goalsMax._max.updatedAt,
+      dailyMax._max.updatedAt,
+      weeklyMax._max.updatedAt,
+    ].filter((d): d is Date => d != null);
+
+    const cloudUpdatedAt =
+      candidates.length === 0
+        ? new Date(0).toISOString()
+        : new Date(Math.max(...candidates.map((d) => d.getTime()))).toISOString();
+
+    return {
+      cloudUpdatedAt,
+      serverTime: new Date().toISOString(),
+    };
+  }
+
+  async nudgeClientPull(userId: string) {
+    const now = new Date();
+    await this.prisma.appSetting.upsert({
+      where: { userId_key: { userId, key: MCP_SYNC_NUDGE_SETTING_KEY } },
+      create: {
+        userId,
+        key: MCP_SYNC_NUDGE_SETTING_KEY,
+        value: now.toISOString(),
+        updatedAt: now,
+      },
+      update: {
+        value: now.toISOString(),
+        updatedAt: now,
+      },
+    });
+    return {
+      ok: true,
+      nudgeAt: now.toISOString(),
+      serverTime: now.toISOString(),
+    };
   }
 
   private async upsertRoutine(userId: string, item: RoutineItemDto) {

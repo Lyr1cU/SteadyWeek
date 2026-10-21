@@ -9,6 +9,7 @@ export function ProfileMenuRow({
   icon,
   onPress,
   danger,
+  selected,
   last,
 }: {
   label: string;
@@ -16,6 +17,7 @@ export function ProfileMenuRow({
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   danger?: boolean;
+  selected?: boolean;
   last?: boolean;
 }) {
   return (
@@ -34,7 +36,9 @@ export function ProfileMenuRow({
         <Text style={[styles.label, danger && styles.labelDanger]}>{label}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      {!danger ? (
+      {selected ? (
+        <Ionicons name="checkmark-circle" size={20} color={theme.colors.accent} />
+      ) : !danger ? (
         <Ionicons name="chevron-forward" size={18} color={theme.colors.textSubtle} />
       ) : null}
     </AnimatedPressable>

@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { ShellTab } from '../../app/routes';
+import { shellTabs, type ShellTab } from '../../app/routes';
 import { AppBackground } from '../../ui/app-background';
-import { TAB_BAR_CLEARANCE } from '../../ui/motion/constants';
-import { TabCrossfade } from '../../ui/motion/tab-crossfade';
+import { ShellPane } from '../../ui/motion/shell-pane';
 import { SyncStatusBadge } from '../../ui/sync-status-badge';
 import { ProfileScreen } from '../profile/profile-screen';
 import { RoutineScreen } from '../routine/routine-screen';
@@ -38,37 +37,36 @@ export function MainShell({
   onOpenDay: (dayKey: string) => void;
   onAuth: () => void;
 }) {
-  const prevTabRef = useRef<ShellTab | null>(null);
-  const prevTab = prevTabRef.current;
+  const tabIndex = shellTabs.indexOf(tab);
+  const prevIndex = useRef(tabIndex);
+  const direction: 1 | -1 = tabIndex >= prevIndex.current ? 1 : -1;
 
   useEffect(() => {
-    prevTabRef.current = tab;
-  }, [tab]);
-
-  const screen =
-    tab === 'today' ? (
-      <TodayScreen
-        focusDayKey={todayFocusDayKey}
-        onFocusDayHandled={onTodayFocusHandled}
-        onCloseDay={onCloseDay}
-        onAssistant={(dayKey) => onAssistant('today', dayKey)}
-        onWeek={() => onTab('week')}
-      />
-    ) : tab === 'week' ? (
-      <WeekScreen onWeeklyReport={onWeeklyReport} onOpenDay={onOpenDay} />
-    ) : tab === 'routine' ? (
-      <RoutineScreen />
-    ) : (
-      <ProfileScreen onShop={onShop} onAssistant={() => onAssistant('profile')} onAuth={onAuth} />
-    );
+    prevIndex.current = tabIndex;
+  }, [tabIndex]);
 
   return (
     <AppBackground>
       <View style={styles.root}>
         <View style={styles.body}>
-          <TabCrossfade tab={tab} prevTab={prevTab}>
-            {screen}
-          </TabCrossfade>
+          <ShellPane active={tab === 'today'} direction={direction}>
+            <TodayScreen
+              focusDayKey={todayFocusDayKey}
+              onFocusDayHandled={onTodayFocusHandled}
+              onCloseDay={onCloseDay}
+              onAssistant={(dayKey) => onAssistant('today', dayKey)}
+              onWeek={() => onTab('week')}
+            />
+          </ShellPane>
+          <ShellPane active={tab === 'week'} direction={direction}>
+            <WeekScreen onWeeklyReport={onWeeklyReport} onOpenDay={onOpenDay} />
+          </ShellPane>
+          <ShellPane active={tab === 'routine'} direction={direction}>
+            <RoutineScreen />
+          </ShellPane>
+          <ShellPane active={tab === 'profile'} direction={direction}>
+            <ProfileScreen onShop={onShop} onAssistant={() => onAssistant('profile')} onAuth={onAuth} />
+          </ShellPane>
         </View>
         <View style={styles.footer} pointerEvents="box-none">
           <View style={styles.syncAnchor} pointerEvents="box-none">
@@ -83,7 +81,7 @@ export function MainShell({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  body: { flex: 1, paddingBottom: TAB_BAR_CLEARANCE },
+  body: { flex: 1 },
   footer: {
     position: 'absolute',
     left: 0,

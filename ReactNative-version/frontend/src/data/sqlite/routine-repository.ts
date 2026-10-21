@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import type { RoutineItem, RoutineItemInput, TodayRoutineRow } from '../../domain/models';
 import { dateKey } from '../../logic/calendar';
+import { compareRoutineItems } from '../../logic/routine-schedule';
 import { routineRunsOnDate } from '../../logic/weekdays';
 import type { RoutineRepository } from '../ports';
 import {
@@ -26,7 +27,7 @@ export function createSqliteRoutineRepository(db: SQLiteDatabase): RoutineReposi
       return rows.flatMap((row) => {
         const item = tryMapRoutineRow(row);
         return item ? [item] : [];
-      });
+      }).sort(compareRoutineItems);
     },
 
     async createItem(input: RoutineItemInput) {
@@ -127,6 +128,7 @@ export function createSqliteRoutineRepository(db: SQLiteDatabase): RoutineReposi
         status: statusById.get(item.id) ?? 'pending',
       }));
 
+      rows.sort((a, b) => compareRoutineItems(a.item, b.item));
       return rows;
     },
 

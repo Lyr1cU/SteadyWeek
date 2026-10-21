@@ -7,6 +7,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RoutineModule } from './routine/routine.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { SyncModule } from './sync/sync.module';
+import { WeeklyGoalsModule } from './weekly-goals/weekly-goals.module';
+import { InsightsModule } from './insights/insights.module';
+import { CloseDayModule } from './close-day/close-day.module';
 
 @Module({
   imports: [
@@ -17,6 +20,9 @@ import { SyncModule } from './sync/sync.module';
     SyncModule,
     ScheduleModule,
     AssistantModule,
+    WeeklyGoalsModule,
+    InsightsModule,
+    CloseDayModule,
   ],
   controllers: [HealthController],
 })

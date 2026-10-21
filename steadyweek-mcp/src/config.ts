@@ -2,6 +2,8 @@ export type SteadyWeekConfig = {
   apiUrl: string;
   email: string;
   password: string;
+  /** IANA timezone for “today” when dayKey is omitted, e.g. Europe/Kyiv */
+  timezone: string | null;
 };
 
 export function loadConfig(): SteadyWeekConfig {
@@ -11,6 +13,8 @@ export function loadConfig(): SteadyWeekConfig {
   );
   const email = process.env.STEADYWEEK_EMAIL?.trim() ?? '';
   const password = process.env.STEADYWEEK_PASSWORD ?? '';
+  const tzRaw = process.env.STEADYWEEK_TIMEZONE?.trim();
+  const timezone = tzRaw && tzRaw.length > 0 ? tzRaw : null;
 
   if (!email || !password) {
     throw new Error(
@@ -18,5 +22,5 @@ export function loadConfig(): SteadyWeekConfig {
     );
   }
 
-  return { apiUrl, email, password };
+  return { apiUrl, email, password, timezone };
 }

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { durationTab, motionDuration, staggerDelay } from './constants';
 import { useReduceMotion } from './use-reduce-motion';
 
@@ -19,11 +19,6 @@ export function StaggerFadeIn({
   }
 
   return (
-    <Animated.View
-      entering={FadeInDown.duration(duration).delay(delay)}
-      exiting={FadeOut.duration(motionDuration(150, reduceMotion))}
-    >
-      {children}
-    </Animated.View>
+    <Animated.View entering={FadeInDown.duration(duration).delay(delay)}>{children}</Animated.View>
   );
 }

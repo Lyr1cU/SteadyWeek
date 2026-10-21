@@ -1,0 +1,9 @@
+{
+  "name": "steadyweek-alarms",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "peerDependencies": {
+    "expo": "*",
+    "react-native": "*"
+  }
+}

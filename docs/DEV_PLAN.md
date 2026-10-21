@@ -54,6 +54,7 @@ Web за компом с интернетом может ходить в API, н
 5. **Продукт поверх ядра** — цели недели, закрытие дня, отчёты (без магазина).
 6. **Геймификация** — XP, огонёк, профиль *(магазин и косметика — после ассетов, см. §7)*.
 7. **MCP + полировка** — Cursor-tools, уведомления, uk *(экран Shop — заглушка до ассетов)*.
+8. **Prod API + расширенный MCP** — Render Free, телефон/MCP на HTTPS, Cursor-tools для целей/close day.
 
 Каждый слой заканчивается **рабочей проверкой**, не «файлы появились».
 
@@ -91,7 +92,7 @@ Web за компом с интернетом может ходить в API, н
 | **Фаза 5**                            | Профиль: XP, уровень, огонёк, предупреждения. Shop — только **«Store soon»** (без каталога)                | После фазы 4                                                            |
 | **Фаза 5b** *(позже)*                 | Магазин за XP, экипировка, слои ассистента — когда будут ассеты / Stitch                                   | Не блокер фазы 5                                                        |
 | **Фаза 6**                            | MCP, напоминания, nebula/glass на Today                                                                    | Не блокер ядра                                                          |
-| **Сейчас (после 5)**                  | **Полировка уже живущих экранов:** кнопки, таббар, модалки, анимации, отступы, состояния press             | Приложение приятно пользоваться каждый день; 5b магазин **не** начинать |
+| **Сейчас (после 5)**                  | ~~**Полировка UI**~~ **закрыто §9**; **фаза 7 §10** — Render + MCP                              | Release APK на HTTPS; remote MCP — позже |
 
 
 Flutter не портируем виджет за виджетом. Stitch — актуальный макет; Flutter — запасной референс, если Stitch ещё пустой.
@@ -256,17 +257,17 @@ XP **можно считать внутри закрытия дня и не по
 
 ## 9. Приоритет сейчас — полировка UI (существующие фичи)
 
-**Не начинать 5b (магазин/ассеты), пока базовые экраны не доведены.** Ядро есть (рутина, Today, Week, close day, профиль, ассистент, sync). Фокус: **ощущение продукта**, не новые сущности.
+**Статус: закрыто (2026-09-27).** Следующий фокус — **§10** (prod API + MCP).
 
 ### Scope
 
-- [ ] Общие контролы: кнопки (primary / ghost / disabled), press-feedback, hit area
-- [ ] Таббар, шапки, FAB ассистента — выровнять с темой и макетом
-- [ ] Модалки (цель недели, close day): клавиатура, анимация появления
-- [ ] Списки Today / Routine / Week: отступы, glass уже есть — добить единообразие
-- [ ] Короткие анимации: таб, чекбокс, закрытие дня (tier), без тяжёлого Lottie
-- [ ] Пустые и error-состояния на рабочих экранах
-- [ ] Профиль: те же карточки/типографика, что Today/Week
+- [x] Общие контролы: кнопки (primary / ghost / disabled), press-feedback, hit area (`AnimatedPressable`, тема)
+- [x] Таббар, шапки, FAB ассистента — выровнять с темой и макетом (`TabCrossfade`, shell/nav)
+- [x] Модалки (цель недели, edit routine): клавиатура, **bottom sheet** с анимацией (`ChromeBottomSheet`)
+- [x] Списки Today / Routine / Week: отступы, glass, единообразие (`GlassSurface`, stagger на экранах)
+- [x] Короткие анимации: tab, чекбокс Today, optional в рутине, close day (tier/stars), context menu
+- [x] Пустые и error-состояния на рабочих экранах (sync badge, assistant fallback)
+- [x] Профиль: карточки/типографика в духе Today/Week
 
 Референс: Flutter `flutter-version/` + Stitch. Токены только из `theme.ts`. Строки EN.
 
@@ -274,15 +275,45 @@ XP **можно считать внутри закрытия дня и не по
 
 - Каталог магазина, покупки, слои ассистента (фаза **5b**)
 - Полный uk, store listing
-- Новые фичи (бонусы, freeze, MCP для целей)
+- Remote MCP для Claude mobile (см. **§10**)
 
-**Готово когда:** день в приложении (Today → отметки → close day → профиль) выглядит цельным: кнопки и анимации не «черновые», без новых экранов-фич.
+**Готово когда:** день в приложении (Today → отметки → close day → профиль) выглядит цельным: кнопки и анимации не «черновые», без новых экранов-фич. ✅
 
 ---
 
 
 
-## 10. Порядок репозитория (папки)
+## 10. Фаза 7 — Prod API (Render) + расширенный MCP
+
+Цель: **Nest в интернете на Free tier**, телефон и Cursor бьют в **HTTPS**, MCP покрывает рутину, день, цели, close day.
+
+### Сервер (Nest + Neon)
+
+- [x] **Render Free** web service `steadyweek-api` (Frankfurt), `GET /health` → `https://steadyweek-api.onrender.com`
+- [x] `render.yaml` + `[docs/DEPLOY_RENDER.md](./DEPLOY_RENDER.md)` (env, build `--include=dev`)
+- [x] `prisma.config.ts`: placeholder на build; `prisma migrate deploy` на start
+- [x] REST: `POST /day-state/status`, weekly goals, `GET /insights/*`, `POST /close-day`, `GET/POST /sync/revision|nudge`
+
+### Клиент
+
+- [x] Auto-sync + **MCP nudge** (`steadyweek_mcp_nudge` → extra quiet pull)
+- [ ] `EXPO_PUBLIC_API_URL=https://steadyweek-api.onrender.com` + **release APK** пересобрать
+- [ ] Cold start Render Free (~15 min sleep) — Sync now / повтор запроса
+
+### MCP (`steadyweek-mcp`, Cursor stdio)
+
+- [x] Расширенный набор tools (routine, status, goals, close day, stats, revision, nudge)
+- [x] `STEADYWEEK_TIMEZONE`
+- [ ] Cursor `mcp.json`: production `STEADYWEEK_API_URL` + restart MCP
+- [ ] **Remote MCP** для Claude.ai / mobile (HTTP + auth) — отдельная задача
+
+**Готово когда:** release APK на Render; Cursor MCP меняет облако — телефон подтягивает после sync.
+
+Отчёт: `[docs/reports/PHASE7_REPORT.md](./reports/PHASE7_REPORT.md)`.
+
+---
+
+## 11. Порядок репозитория (папки)
 
 ```
 SteadyWeek/
@@ -292,7 +323,8 @@ SteadyWeek/
   ReactNative-version/
     frontend/             Expo клиент
     backend/              NestJS
-  flutter-version/        Flutter, не трогаем без нужды
+  flutter-version/        Flutter, референс UI (не развиваем)
+  steadyweek-mcp/         MCP для Cursor (stdio → Nest API)
 ```
 
 Клиент не знает SQL Neon. Nest не знает React. `evaluateDay` не знает HTTP.
@@ -301,8 +333,10 @@ SteadyWeek/
 
 
 
-## 11. Что делать следующим коммитом работы
+## 12. Что делать следующим коммитом работы
 
-Фазы **4**, **5** и **6** по коду закрыты.
+Фазы **4–6** и **§9 полировка UI** закрыты. **Фаза 7 (§10)** — в процессе: Render live, MCP расширен.
 
-**Сейчас приоритет — §9 полировка UI** уже существующих экранов (кнопки, анимации, единообразие). Магазин (**5b**) — после этого, когда будут ассеты.
+**Сейчас:** release APK с `EXPO_PUBLIC_API_URL` на Render; Cursor `mcp.json` на HTTPS; при желании — remote MCP для Claude.
+
+**Потом:** **5b** (магазин/ассеты), uk, store listing.

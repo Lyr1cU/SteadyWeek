@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { DayItemStatus, TodayRoutineRow } from '../../domain/models';
 import { formatTime12h } from '../../logic/time-of-day';
 import { strings } from '../../l10n';
 import { ChromeContextMenu } from '../../ui/chrome-context-menu';
 import { GlassSurface } from '../../ui/glass-surface';
+import { AnimatedPressable } from '../../ui/motion/animated-pressable';
 import { sphereLabel, sphereSymbol } from '../../ui/sphere-ui';
 import { theme } from '../../ui/theme';
+import { TodayTaskCheckbox } from './today-task-checkbox';
 
 export function TodayItem({
   row,
@@ -51,41 +53,37 @@ export function TodayItem({
     <View style={styles.row}>
       <Text style={styles.timeCol}>{formatTime12h(row.item.scheduledMinuteOfDay)}</Text>
       <GlassSurface style={[styles.card, skipped && styles.cardSkipped]}>
-        <Pressable style={styles.cardInner} onPress={toggleDone}>
-          <View style={styles.iconWrap}>
-            <Text style={styles.sphereSymbol}>{symbol}</Text>
-          </View>
-          <View style={styles.textCol}>
-            <Text
-              style={[styles.title, (done || skipped) && styles.titleMuted]}
-              numberOfLines={2}
-            >
-              {row.item.title}
-            </Text>
-            <Text style={styles.subtitle}>
-              {skipped ? copy.skippedToday : sphereLabel(row.item.sphere)}
-            </Text>
-          </View>
-          <Pressable
-            onPress={toggleDone}
-            style={[styles.check, done && styles.checkOn, skipped && styles.checkSkipped]}
-            hitSlop={8}
-          >
-            {done ? <Text style={styles.checkMark}>✓</Text> : null}
-          </Pressable>
+        <View style={styles.cardInner}>
+          <AnimatedPressable style={styles.mainTap} onPress={toggleDone}>
+            <View style={styles.iconWrap}>
+              <Text style={styles.sphereSymbol}>{symbol}</Text>
+            </View>
+            <View style={styles.textCol}>
+              <Text
+                style={[styles.title, (done || skipped) && styles.titleMuted]}
+                numberOfLines={2}
+              >
+                {row.item.title}
+              </Text>
+              <Text style={styles.subtitle}>
+                {skipped ? copy.skippedToday : sphereLabel(row.item.sphere)}
+              </Text>
+            </View>
+          </AnimatedPressable>
+          <TodayTaskCheckbox checked={done} skipped={skipped} onPress={toggleDone} />
           {showMenu ? (
             <ChromeContextMenu
               items={menuItems}
               trigger={(open) => (
-                <Pressable onPress={open} style={styles.menuBtn} hitSlop={8}>
+                <AnimatedPressable onPress={open} style={styles.menuBtn} hitSlop={8}>
                   <Ionicons name="ellipsis-vertical" size={18} color={theme.colors.textSubtle} />
-                </Pressable>
+                </AnimatedPressable>
               )}
             />
           ) : (
             <View style={styles.menuPlaceholder} />
           )}
-        </Pressable>
+        </View>
       </GlassSurface>
     </View>
   );
@@ -119,6 +117,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 10,
   },
+  mainTap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minWidth: 0,
+  },
   iconWrap: {
     width: 28,
     alignItems: 'center',
@@ -127,12 +132,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: theme.colors.accentMuted,
     fontWeight: '600',
-  },
-  checkMark: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: theme.colors.accentOn,
-    lineHeight: 18,
   },
   textCol: {
     flex: 1,
@@ -152,22 +151,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 13,
     color: theme.colors.textSubtle,
-  },
-  check: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: 'rgba(202, 184, 255, 0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkOn: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
-  },
-  checkSkipped: {
-    borderColor: theme.colors.warning,
   },
   menuBtn: {
     paddingLeft: 2,

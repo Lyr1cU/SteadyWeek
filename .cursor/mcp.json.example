@@ -6,7 +6,8 @@
       "env": {
         "STEADYWEEK_API_URL": "http://127.0.0.1:3000",
         "STEADYWEEK_EMAIL": "you@example.com",
-        "STEADYWEEK_PASSWORD": "your-app-password"
+        "STEADYWEEK_PASSWORD": "your-app-password",
+        "STEADYWEEK_TIMEZONE": "Europe/Kyiv"
       }
     }
   }

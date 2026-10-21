@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { createAppRepositories } from './create-repos';
 import { ReposProvider } from './repos-context';
 import type { AppRepositories } from '../data/ports';
@@ -29,28 +30,30 @@ export default function App() {
 
   if (bootError) {
     return (
-      <>
+      <GestureHandlerRootView style={{ flex: 1 }}>
         <StatusBar style="light" />
         <BootScreen error={bootError} />
-      </>
+      </GestureHandlerRootView>
     );
   }
 
   if (!repos || !route) {
     return (
-      <>
+      <GestureHandlerRootView style={{ flex: 1 }}>
         <StatusBar style="light" />
         <BootScreen />
-      </>
+      </GestureHandlerRootView>
     );
   }
 
   return (
-    <ReposProvider repos={repos}>
-      <SyncProvider>
-        <StatusBar style="light" />
-        <AppNavigator route={route} onRoute={setRoute} />
-      </SyncProvider>
-    </ReposProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ReposProvider repos={repos}>
+        <SyncProvider>
+          <StatusBar style="light" />
+          <AppNavigator route={route} onRoute={setRoute} />
+        </SyncProvider>
+      </ReposProvider>
+    </GestureHandlerRootView>
   );
 }

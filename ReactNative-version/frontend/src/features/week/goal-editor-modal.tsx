@@ -1,16 +1,8 @@
 import { useEffect, useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LIFE_SPHERES, type LifeSphereId } from '../../domain/life-sphere';
 import type { WeeklyGoal, WeeklyGoalInput } from '../../domain/models';
-import { FadeInDownView, FadeInView } from '../../ui/motion/enter';
+import { ChromeBottomSheet } from '../../ui/chrome-bottom-sheet';
 import { theme } from '../../ui/theme';
 import { sphereLabel } from '../../ui/sphere-ui';
 import { useKeyboardBottomInset } from '../../ui/use-keyboard-inset';
@@ -55,74 +47,63 @@ export function GoalEditorModal({
   };
 
   return (
-    <Modal visible={visible} animationType="none" transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <FadeInView style={styles.backdropFill} />
-        <FadeInDownView
-          style={[
-            styles.sheet,
-            keyboardInset > 0 && { marginBottom: keyboardInset, maxHeight: '85%' },
-          ]}
-        >
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-          <Text style={styles.heading}>{editing ? 'Edit goal' : 'New weekly goal'}</Text>
-          <Text style={styles.label}>Title</Text>
-          <TextInput
-            style={styles.input}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="What do you want this week?"
-            placeholderTextColor={theme.colors.textSubtle}
-          />
-          <Text style={styles.label}>Sphere</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.spheres}>
-            {LIFE_SPHERES.map((id) => (
-              <Pressable
-                key={id}
-                onPress={() => setSphere(id)}
-                style={[styles.sphereChip, sphere === id && styles.sphereChipOn]}
-              >
-                <Text style={[styles.sphereText, sphere === id && styles.sphereTextOn]}>
-                  {sphereLabel(id)}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          <Text style={styles.label}>Target count</Text>
-          <TextInput
-            style={styles.input}
-            value={targetText}
-            onChangeText={setTargetText}
-            keyboardType="number-pad"
-          />
-          <View style={styles.actions}>
-            <Pressable onPress={onClose} style={styles.secondaryBtn}>
-              <Text style={styles.secondaryText}>Cancel</Text>
+    <ChromeBottomSheet
+      visible={visible}
+      onClose={onClose}
+      sheetStyle={[
+        styles.sheet,
+        keyboardInset > 0 && { marginBottom: keyboardInset, maxHeight: '85%' },
+      ]}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <Text style={styles.heading}>{editing ? 'Edit goal' : 'New weekly goal'}</Text>
+        <Text style={styles.label}>Title</Text>
+        <TextInput
+          style={styles.input}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="What do you want this week?"
+          placeholderTextColor={theme.colors.textSubtle}
+        />
+        <Text style={styles.label}>Sphere</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.spheres}>
+          {LIFE_SPHERES.map((id) => (
+            <Pressable
+              key={id}
+              onPress={() => setSphere(id)}
+              style={[styles.sphereChip, sphere === id && styles.sphereChipOn]}
+            >
+              <Text style={[styles.sphereText, sphere === id && styles.sphereTextOn]}>
+                {sphereLabel(id)}
+              </Text>
             </Pressable>
-            <Pressable onPress={() => void submit()} style={styles.primaryBtn} disabled={saving}>
-              <Text style={styles.primaryText}>{saving ? 'Saving…' : 'Save'}</Text>
-            </Pressable>
-          </View>
-          </ScrollView>
-        </FadeInDownView>
-      </View>
-    </Modal>
+          ))}
+        </ScrollView>
+        <Text style={styles.label}>Target count</Text>
+        <TextInput
+          style={styles.input}
+          value={targetText}
+          onChangeText={setTargetText}
+          keyboardType="number-pad"
+        />
+        <View style={styles.actions}>
+          <Pressable onPress={onClose} style={styles.secondaryBtn}>
+            <Text style={styles.secondaryText}>Cancel</Text>
+          </Pressable>
+          <Pressable onPress={() => void submit()} style={styles.primaryBtn} disabled={saving}>
+            <Text style={styles.primaryText}>{saving ? 'Saving…' : 'Save'}</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </ChromeBottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdropFill: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
   sheet: {
     backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,

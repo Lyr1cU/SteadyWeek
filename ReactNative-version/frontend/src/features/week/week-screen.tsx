@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import { useRepos } from '../../app/repos-context';
 import { useSync } from '../../app/sync-context';
 import type { WeeklyGoal } from '../../domain/models';
@@ -11,7 +12,11 @@ import {
 } from '../../logic/calendar';
 import { strings } from '../../l10n';
 import { GlassSurface } from '../../ui/glass-surface';
+import { ListSkeleton } from '../../ui/list-skeleton';
 import { AnimatedPressable } from '../../ui/motion/animated-pressable';
+import { TAB_BAR_CLEARANCE } from '../../ui/motion/constants';
+import { useShellEnterKey } from '../../ui/motion/shell-pane';
+import { useHorizontalPageSwipe } from '../../ui/motion/use-horizontal-page-swipe';
 import { StaggerFadeIn } from '../../ui/motion/stagger-fade-in';
 import { theme } from '../../ui/theme';
 import { GoalEditorModal } from './goal-editor-modal';
@@ -29,11 +34,13 @@ export function WeekScreen({
   onWeeklyReport: (weekKey: string) => void;
   onOpenDay: (dayKey: string) => void;
 }) {
+  const enterKey = useShellEnterKey();
   const { goals, reports } = useRepos();
   const { syncRevision } = useSync();
   const [anchor, setAnchor] = useState(() => startOfLocalDay(new Date()));
   const weekKey = weekKeyFromDate(anchor);
   const [items, setItems] = useState<WeeklyGoal[]>([]);
+  const [loadedWeek, setLoadedWeek] = useState<string | null>(null);
   const [tierByDayKey, setTierByDayKey] = useState<Record<string, 'green' | 'yellow' | 'red' | null>>(
     {},
   );
@@ -55,11 +62,16 @@ export function WeekScreen({
       map[r.dayKey] = r.dayTier;
     }
     setTierByDayKey(map);
+    setLoadedWeek(weekKey);
   }, [goals, reports, weekKey, dayKeys]);
 
   useEffect(() => {
     void reload();
   }, [reload, syncRevision]);
+
+  const goPrevWeek = useCallback(() => setAnchor((d) => addLocalDays(d, -7)), []);
+  const goNextWeek = useCallback(() => setAnchor((d) => addLocalDays(d, 7)), []);
+  const pageSwipe = useHorizontalPageSwipe(goPrevWeek, goNextWeek);
 
   const openAdd = () => {
     setEditing(null);
@@ -73,58 +85,64 @@ export function WeekScreen({
 
   return (
     <>
+      <GestureDetector gesture={pageSwipe}>
       <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
-        <StaggerFadeIn index={0}>
-          <WeekNavBar
-            anchor={anchor}
-            onPrev={() => setAnchor((d) => addLocalDays(d, -7))}
-            onNext={() => setAnchor((d) => addLocalDays(d, 7))}
-            onThisWeek={() => setAnchor(startOfLocalDay(new Date()))}
-          />
-        </StaggerFadeIn>
+        <WeekNavBar
+          anchor={anchor}
+          onPrev={goPrevWeek}
+          onNext={goNextWeek}
+          onThisWeek={() => setAnchor(startOfLocalDay(new Date()))}
+        />
 
-        <StaggerFadeIn index={1}>
-          <Text style={styles.title}>{copy.weekLabel}</Text>
-        </StaggerFadeIn>
-
-        <StaggerFadeIn index={2}>
-          <WeekQualityStrip weekKey={weekKey} tierByDayKey={tierByDayKey} onDayPress={onOpenDay} />
-        </StaggerFadeIn>
-
-        <StaggerFadeIn index={3}>
-          <View style={styles.goalsHeader}>
-            <Text style={styles.goalsTitle}>{copy.weeklyGoals}</Text>
-            <AnimatedPressable onPress={openAdd} style={styles.addPill}>
-              <Text style={styles.addPillText}>+ {copy.addGoal}</Text>
-            </AnimatedPressable>
-          </View>
-        </StaggerFadeIn>
-
-        {items.length === 0 ? (
-          <StaggerFadeIn index={4}>
-            <GlassSurface style={styles.emptyCard}>
-              <Text style={styles.emptyText}>{copy.emptyGoals}</Text>
-              <AnimatedPressable onPress={openAdd} style={styles.emptyLink}>
-                <Text style={styles.emptyLinkText}>+ {copy.addGoal}</Text>
-              </AnimatedPressable>
-            </GlassSurface>
+        {loadedWeek === weekKey && enterKey >= 0 ? (
+        <View key={`${weekKey}-${enterKey}`} style={styles.weekBody}>
+          <StaggerFadeIn index={0}>
+            <Text style={styles.title}>{copy.weekLabel}</Text>
           </StaggerFadeIn>
-        ) : (
-          items.map((goal, index) => (
-            <StaggerFadeIn key={goal.id} index={index + 4}>
-              <WeekGoalCard
-                goal={goal}
-                onEdit={() => openEdit(goal)}
-                onRemove={() => void goals.delete(goal.id).then(() => reload())}
-              />
-            </StaggerFadeIn>
-          ))
-        )}
 
-        <StaggerFadeIn index={items.length + 5}>
-          <WeekReportCta onPress={() => onWeeklyReport(weekKey)} />
-        </StaggerFadeIn>
+          <StaggerFadeIn index={1}>
+            <WeekQualityStrip weekKey={weekKey} tierByDayKey={tierByDayKey} onDayPress={onOpenDay} />
+          </StaggerFadeIn>
+
+          <StaggerFadeIn index={2}>
+            <View style={styles.goalsHeader}>
+              <Text style={styles.goalsTitle}>{copy.weeklyGoals}</Text>
+              <AnimatedPressable onPress={openAdd} style={styles.addPill}>
+                <Text style={styles.addPillText}>+ {copy.addGoal}</Text>
+              </AnimatedPressable>
+            </View>
+          </StaggerFadeIn>
+
+          {items.length === 0 ? (
+            <StaggerFadeIn index={3}>
+              <GlassSurface style={styles.emptyCard}>
+                <Text style={styles.emptyText}>{copy.emptyGoals}</Text>
+                <AnimatedPressable onPress={openAdd} style={styles.emptyLink}>
+                  <Text style={styles.emptyLinkText}>+ {copy.addGoal}</Text>
+                </AnimatedPressable>
+              </GlassSurface>
+            </StaggerFadeIn>
+          ) : (
+            items.map((goal, index) => (
+              <StaggerFadeIn key={goal.id} index={index + 3}>
+                <WeekGoalCard
+                  goal={goal}
+                  onEdit={() => openEdit(goal)}
+                  onRemove={() => void goals.delete(goal.id).then(() => reload())}
+                />
+              </StaggerFadeIn>
+            ))
+          )}
+
+          <StaggerFadeIn index={items.length + 4}>
+            <WeekReportCta onPress={() => onWeeklyReport(weekKey)} />
+          </StaggerFadeIn>
+        </View>
+        ) : (
+          <ListSkeleton variant="routine" rows={5} />
+        )}
       </ScrollView>
+      </GestureDetector>
 
       <GoalEditorModal
         visible={editorOpen}
@@ -149,8 +167,9 @@ const styles = StyleSheet.create({
   content: {
     padding: theme.spacing.screenX,
     paddingTop: theme.spacing.screenTop,
-    paddingBottom: 24,
+    paddingBottom: TAB_BAR_CLEARANCE,
   },
+  weekBody: { flexGrow: 1 },
   title: { fontSize: 32, fontWeight: '700', color: theme.colors.text, marginBottom: 16 },
   goalsHeader: {
     flexDirection: 'row',

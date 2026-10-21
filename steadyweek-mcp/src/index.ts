@@ -13,10 +13,10 @@ async function main() {
 
   const server = new McpServer({
     name: 'steadyweek',
-    version: '0.1.0',
+    version: '0.2.1',
   });
 
-  registerTools(server, api);
+  registerTools(server, api, config);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

@@ -8,6 +8,7 @@ import type {
   WeeklyReport,
 } from '../../domain/models';
 import { dateKey } from '../../logic/calendar';
+import { compareRoutineItems } from '../../logic/routine-schedule';
 import { routineRunsOnDate } from '../../logic/weekdays';
 import { DEFAULT_ROUTINE_SEED } from '../seed/default-routine';
 import type { AppRepositories, RoutineItemInput } from '../ports';
@@ -35,7 +36,7 @@ export function createMemoryRepositories(): AppRepositories {
   return {
     routine: {
       async listTemplates() {
-        return [...templates].sort((a, b) => a.order - b.order);
+        return [...templates].sort(compareRoutineItems);
       },
       async createItem(input: RoutineItemInput) {
         const item: RoutineItem = {
@@ -78,10 +79,12 @@ export function createMemoryRepositories(): AppRepositories {
       async loadTodayRows(date) {
         const key = dateKey(date);
         const items = templates.filter((t) => routineRunsOnDate(t.weekdays, date));
-        return items.map((item) => ({
-          item,
-          status: dayStatus.get(statusKey(key, item.id)) ?? 'pending',
-        }));
+        return items
+          .map((item) => ({
+            item,
+            status: dayStatus.get(statusKey(key, item.id)) ?? 'pending',
+          }))
+          .sort((a, b) => compareRoutineItems(a.item, b.item));
       },
       async setDayStatus(date, routineItemId, status) {
         dayStatus.set(statusKey(dateKey(date), routineItemId), status);

@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { parseDayKey, routineRunsOnDate } from '../assistant/weekdays';
 import { addDays, formatDayKey, startOfWeekMonday } from '../common/calendar';
+import { compareRoutineSchedule } from '../common/routine-schedule';
 import type { ScheduleDayResponse, ScheduleWeekResponse } from './schedule.dto';
 
 type RoutineRow = {
@@ -12,6 +13,7 @@ type RoutineRow = {
   weekdays: number;
   isOptional: boolean;
   scheduledMinuteOfDay: number | null;
+  sortOrder: number;
 };
 
 @Injectable()
@@ -84,11 +86,18 @@ export class ScheduleService {
     statuses: { routineItemId: string; status: string }[],
   ): ScheduleDayResponse {
     const statusByItemId = new Map(statuses.map((row) => [row.routineItemId, row.status]));
+    const forDay = routines.filter((row) => routineRunsOnDate(row.weekdays, date));
+    forDay.sort((a, b) =>
+      compareRoutineSchedule(
+        a.scheduledMinuteOfDay,
+        a.sortOrder,
+        b.scheduledMinuteOfDay,
+        b.sortOrder,
+      ),
+    );
     return {
       dayKey,
-      items: routines
-        .filter((row) => routineRunsOnDate(row.weekdays, date))
-        .map((row) => ({
+      items: forDay.map((row) => ({
           id: row.id,
           title: row.title,
           sphere: row.sphere,

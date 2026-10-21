@@ -1,69 +1,27 @@
-import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 import { strings } from '../l10n';
+import {
+  closeDayRemindersAvailable,
+  ensureAndroidChannel,
+  ensureNotificationsReady,
+  loadNotificationsModule,
+  localNotificationsAvailable,
+} from './local-notifications-core';
+import { closeDayChannelId, routineChannelId } from './reminder-channels';
+import { getReminderPresentation } from './reminder-presentation';
+
+export { closeDayRemindersAvailable, localNotificationsAvailable };
 
 const CLOSE_DAY_NOTIFICATION_ID = 'steadyweek-close-day';
-const TEST_NOTIFICATION_ID = 'steadyweek-close-day-test';
-
-let handlerInstalled = false;
-
-function isDevBuild(): boolean {
-  if (Platform.OS === 'web') {
-    return false;
-  }
-  return Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
-}
-
-/** Local notifications — dev / release builds only (not Expo Go on Android). */
-export function closeDayRemindersAvailable(): boolean {
-  return isDevBuild();
-}
-
-async function loadNotifications() {
-  return import('expo-notifications');
-}
-
-async function ensureNotificationReady(Notifications: Awaited<ReturnType<typeof loadNotifications>>) {
-  if (!handlerInstalled) {
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: false,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      }),
-    });
-    handlerInstalled = true;
-  }
-
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  if (existing === 'granted') {
-    return true;
-  }
-  const { status } = await Notifications.requestPermissionsAsync();
-  return status === 'granted';
-}
-
-async function ensureAndroidCloseDayChannel(
-  Notifications: Awaited<ReturnType<typeof loadNotifications>>,
-) {
-  if (Platform.OS !== 'android') {
-    return;
-  }
-  await Notifications.setNotificationChannelAsync('close_day', {
-    name: 'Daily check-in',
-    importance: Notifications.AndroidImportance.HIGH,
-  });
-}
+const TEST_NOTIFICATION_ID = 'steadyweek-reminder-test';
 
 export async function initCloseDayReminder(options?: { hour?: number; minute?: number }) {
-  if (!closeDayRemindersAvailable()) {
+  if (!localNotificationsAvailable()) {
     return;
   }
 
-  const Notifications = await loadNotifications();
-  const granted = await ensureNotificationReady(Notifications);
+  const Notifications = await loadNotificationsModule();
+  const granted = await ensureNotificationsReady(Notifications);
   if (!granted) {
     return;
   }
@@ -71,8 +29,17 @@ export async function initCloseDayReminder(options?: { hour?: number; minute?: n
   const hour = options?.hour ?? 21;
   const minute = options?.minute ?? 0;
   const copy = strings().notifications;
+  const presentation = await getReminderPresentation();
+  const channelId = closeDayChannelId(presentation);
+  const fullScreen = presentation === 'screen';
 
-  await ensureAndroidCloseDayChannel(Notifications);
+  await ensureAndroidChannel(
+    Notifications,
+    channelId,
+    'Daily check-in',
+    'Reminder to close your day',
+    fullScreen ? Notifications.AndroidImportance.MAX : Notifications.AndroidImportance.HIGH,
+  );
 
   await Notifications.cancelScheduledNotificationAsync(CLOSE_DAY_NOTIFICATION_ID);
 
@@ -81,44 +48,66 @@ export async function initCloseDayReminder(options?: { hour?: number; minute?: n
     content: {
       title: copy.closeDayTitle,
       body: copy.closeDayBody,
+      sound: true,
+      priority: fullScreen
+        ? Notifications.AndroidNotificationPriority.MAX
+        : Notifications.AndroidNotificationPriority.HIGH,
+      data: fullScreen ? { fullScreen: true } : undefined,
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour,
       minute,
-      channelId: Platform.OS === 'android' ? 'close_day' : undefined,
+      channelId: Platform.OS === 'android' ? channelId : undefined,
     },
   });
 }
 
-/** Dev build only: system notification in ~5 seconds. */
+/** Fires in 8 seconds using the current shade or full-screen mode. Lock the phone to check it. */
 export async function testCloseDayReminder(): Promise<'scheduled' | 'denied' | 'unavailable'> {
-  if (!closeDayRemindersAvailable()) {
+  if (!localNotificationsAvailable()) {
     return 'unavailable';
   }
 
   const copy = strings().notifications;
-  const Notifications = await loadNotifications();
-  const granted = await ensureNotificationReady(Notifications);
+  const Notifications = await loadNotificationsModule();
+  const granted = await ensureNotificationsReady(Notifications);
   if (!granted) {
     return 'denied';
   }
 
-  await ensureAndroidCloseDayChannel(Notifications);
+  const presentation = await getReminderPresentation();
+  const channelId = routineChannelId(presentation);
+  const fullScreen = presentation === 'screen';
+
+  await ensureAndroidChannel(
+    Notifications,
+    channelId,
+    fullScreen ? 'Routine alarms' : 'Routine reminders',
+    fullScreen
+      ? 'Turns the screen on at scheduled routine times'
+      : 'Reminders at scheduled routine times',
+    fullScreen ? Notifications.AndroidImportance.MAX : Notifications.AndroidImportance.HIGH,
+  );
 
   await Notifications.cancelScheduledNotificationAsync(TEST_NOTIFICATION_ID);
 
   await Notifications.scheduleNotificationAsync({
     identifier: TEST_NOTIFICATION_ID,
     content: {
-      title: copy.closeDayTitle,
-      body: copy.closeDayBody,
+      title: copy.routineTitle,
+      body: copy.testBody,
+      sound: true,
+      priority: fullScreen
+        ? Notifications.AndroidNotificationPriority.MAX
+        : Notifications.AndroidNotificationPriority.HIGH,
+      data: fullScreen ? { fullScreen: true } : undefined,
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      seconds: 5,
+      seconds: 8,
       repeats: false,
-      channelId: Platform.OS === 'android' ? 'close_day' : undefined,
+      channelId: Platform.OS === 'android' ? channelId : undefined,
     },
   });
 

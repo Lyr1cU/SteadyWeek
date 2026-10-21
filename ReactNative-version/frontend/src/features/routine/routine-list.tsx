@@ -24,7 +24,7 @@ export function RoutineList({
 
   if (items.length === 0) {
     return (
-      <StaggerFadeIn index={0}>
+      <StaggerFadeIn index={2}>
         <GlassSurface style={styles.emptyCard}>
           <Text style={styles.emptyText}>{copy.emptyList}</Text>
           <AnimatedPressable onPress={onExpandAdd} style={styles.emptyLink}>
@@ -38,7 +38,7 @@ export function RoutineList({
   return (
     <View style={styles.list}>
       {items.map((item, index) => (
-        <StaggerFadeIn key={item.id} index={index}>
+        <StaggerFadeIn key={item.id} index={index + 2}>
           <RoutineCard
             item={item}
             active={editingId === item.id}

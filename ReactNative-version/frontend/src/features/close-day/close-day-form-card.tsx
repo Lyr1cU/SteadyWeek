@@ -1,10 +1,9 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { strings } from '../../l10n';
 import { GlassSurface } from '../../ui/glass-surface';
 import { AnimatedPressable } from '../../ui/motion/animated-pressable';
 import { theme } from '../../ui/theme';
-
-const MOODS = [1, 2, 3, 4, 5] as const;
+import { CloseDayMoodStars } from './close-day-mood-stars';
 
 export function CloseDayFormCard({
   highlight,
@@ -57,20 +56,7 @@ export function CloseDayFormCard({
 
       <Text style={styles.label}>{copy.labelMood}</Text>
       <Text style={styles.moodHint}>{copy.moodHint}</Text>
-      <View style={styles.moodRow}>
-        {MOODS.map((m) => {
-          const filled = mood != null && m <= mood;
-          return (
-            <Pressable
-              key={m}
-              onPress={() => onMood(mood === m ? null : m)}
-              style={[styles.moodChip, filled && styles.moodChipOn]}
-            >
-              <Text style={[styles.moodText, filled && styles.moodTextOn]}>{m}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <CloseDayMoodStars mood={mood} onMood={onMood} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -106,25 +92,6 @@ const styles = StyleSheet.create({
   },
   inputTall: { minHeight: 96 },
   moodHint: { fontSize: 12, color: theme.colors.textSubtle, marginBottom: 10 },
-  moodRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
-  moodChip: {
-    flex: 1,
-    maxWidth: 52,
-    aspectRatio: 1,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(53, 45, 85, 0.45)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border,
-  },
-  moodChipOn: {
-    backgroundColor: theme.colors.accentContainer,
-    borderColor: 'rgba(202, 184, 255, 0.55)',
-    borderWidth: 1.5,
-  },
-  moodText: { color: theme.colors.textMuted, fontWeight: '700', fontSize: 16 },
-  moodTextOn: { color: theme.colors.accent },
   error: { color: theme.colors.danger, marginTop: 12 },
   cta: {
     marginTop: 20,

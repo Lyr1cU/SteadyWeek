@@ -19,6 +19,16 @@ export function formatTime12h(minute: number | null): string {
   return `${hours12}:${String(mins).padStart(2, '0')} ${period}`;
 }
 
+export function dateFromMinuteOfDay(minute: number): Date {
+  const date = new Date();
+  date.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
+  return date;
+}
+
+export function minuteFromDate(date: Date): number {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
 export function parseTimeInput(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) {

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -9,11 +9,20 @@ import {
   View,
   type LayoutRectangle,
 } from 'react-native';
-import { FadeInView, ZoomInView } from './motion/enter';
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { durationModal, motionDuration } from './motion/constants';
+import { useReduceMotion } from './motion/use-reduce-motion';
 import { theme } from './theme';
 
 const MENU_BG = 'rgba(37, 32, 56, 0.97)';
 const MENU_RIM = 'rgba(231, 223, 255, 0.55)';
+const MENU_EASE_OUT = Easing.out(Easing.cubic);
 
 export type ChromeMenuItem = {
   key: string;
@@ -28,24 +37,108 @@ type ChromeContextMenuProps = {
 };
 
 export function ChromeContextMenu({ items, trigger }: ChromeContextMenuProps) {
+  const reduceMotion = useReduceMotion();
   const { width: windowWidth } = useWindowDimensions();
   const anchorRef = useRef<View>(null);
-  const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [anchor, setAnchor] = useState<LayoutRectangle | null>(null);
+  const closingRef = useRef(false);
+
+  const backdropOpacity = useSharedValue(0);
+  const panelOpacity = useSharedValue(0);
+  const panelScale = useSharedValue(0.92);
+  const panelShiftY = useSharedValue(-8);
+
+  const enterDur = motionDuration(durationModal, reduceMotion);
+  const exitDur = motionDuration(180, reduceMotion);
+
+  const finishClose = useCallback(() => {
+    closingRef.current = false;
+    setVisible(false);
+    setAnchor(null);
+  }, []);
+
+  const playEnter = useCallback(() => {
+    backdropOpacity.value = 0;
+    panelOpacity.value = 0;
+    panelScale.value = 0.92;
+    panelShiftY.value = -8;
+    backdropOpacity.value = withTiming(1, { duration: enterDur, easing: MENU_EASE_OUT });
+    panelOpacity.value = withTiming(1, { duration: enterDur, easing: MENU_EASE_OUT });
+    panelScale.value = withTiming(1, { duration: enterDur, easing: MENU_EASE_OUT });
+    panelShiftY.value = withTiming(0, { duration: enterDur, easing: MENU_EASE_OUT });
+  }, [backdropOpacity, enterDur, panelOpacity, panelScale, panelShiftY]);
+
+  const playExit = useCallback(
+    (onDone?: () => void) => {
+      if (reduceMotion) {
+        finishClose();
+        onDone?.();
+        return;
+      }
+      backdropOpacity.value = withTiming(0, { duration: exitDur, easing: MENU_EASE_OUT });
+      panelOpacity.value = withTiming(0, { duration: exitDur, easing: MENU_EASE_OUT });
+      panelScale.value = withTiming(0.94, { duration: exitDur, easing: MENU_EASE_OUT });
+      panelShiftY.value = withTiming(-6, { duration: exitDur, easing: MENU_EASE_OUT }, (finished) => {
+        if (finished) {
+          runOnJS(finishClose)();
+          if (onDone) {
+            runOnJS(onDone)();
+          }
+        }
+      });
+    },
+    [
+      backdropOpacity,
+      exitDur,
+      finishClose,
+      panelOpacity,
+      panelScale,
+      panelShiftY,
+      reduceMotion,
+    ],
+  );
+
+  useEffect(() => {
+    if (visible && anchor) {
+      playEnter();
+    }
+  }, [visible, anchor, playEnter]);
 
   const openMenu = useCallback(() => {
+    if (closingRef.current) {
+      return;
+    }
     anchorRef.current?.measureInWindow((x, y, width, height) => {
       setAnchor({ x, y, width, height });
-      setOpen(true);
+      setVisible(true);
     });
   }, []);
 
-  const close = useCallback(() => setOpen(false), []);
+  const close = useCallback(() => {
+    if (!visible || closingRef.current) {
+      return;
+    }
+    closingRef.current = true;
+    playExit();
+  }, [playExit, visible]);
 
   const runItem = (item: ChromeMenuItem) => {
-    close();
-    item.onPress();
+    if (closingRef.current) {
+      return;
+    }
+    closingRef.current = true;
+    playExit(item.onPress);
   };
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const panelMotionStyle = useAnimatedStyle(() => ({
+    opacity: panelOpacity.value,
+    transform: [{ scale: panelScale.value }, { translateY: panelShiftY.value }],
+  }));
 
   const panelWidth = 248;
   const panelLeft =
@@ -59,13 +152,19 @@ export function ChromeContextMenu({ items, trigger }: ChromeContextMenuProps) {
       <View ref={anchorRef} collapsable={false}>
         {trigger(openMenu)}
       </View>
-      <Modal visible={open} transparent animationType="none" onRequestClose={close}>
+      <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
         <View style={styles.modalRoot}>
-          <FadeInView ms={140} style={styles.backdropHost}>
+          <Animated.View style={[styles.backdropHost, backdropStyle]}>
             <Pressable style={styles.backdrop} onPress={close} accessibilityLabel="Close menu" />
-          </FadeInView>
+          </Animated.View>
           {anchor ? (
-            <ZoomInView style={[styles.panel, { top: panelTop, left: panelLeft, width: panelWidth }]}>
+            <Animated.View
+              style={[
+                styles.panel,
+                panelMotionStyle,
+                { top: panelTop, left: panelLeft, width: panelWidth },
+              ]}
+            >
               {items.map((item) => (
                 <Pressable
                   key={item.key}
@@ -76,7 +175,7 @@ export function ChromeContextMenu({ items, trigger }: ChromeContextMenuProps) {
                   <Text style={styles.itemLabel}>{item.label}</Text>
                 </Pressable>
               ))}
-            </ZoomInView>
+            </Animated.View>
           ) : null}
         </View>
       </Modal>

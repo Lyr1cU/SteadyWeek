@@ -3,10 +3,13 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRepos } from '../../app/repos-context';
 import { useSync } from '../../app/sync-context';
 import type { RoutineItem, RoutineItemInput } from '../../domain/models';
-import { formatMinuteOfDay, parseTimeInput } from '../../logic/time-of-day';
 import { strings } from '../../l10n';
 import { ChromeConfirmDialog } from '../../ui/chrome-confirm-dialog';
+import { syncRoutineReminders } from '../../notifications/routine-reminder-sync';
+import { ListSkeleton } from '../../ui/list-skeleton';
+import { TAB_BAR_CLEARANCE } from '../../ui/motion/constants';
 import { AnimatedPressable } from '../../ui/motion/animated-pressable';
+import { useShellEnterKey } from '../../ui/motion/shell-pane';
 import { StaggerFadeIn } from '../../ui/motion/stagger-fade-in';
 import { theme } from '../../ui/theme';
 import { RoutineEditorModal } from './routine-editor-modal';
@@ -33,20 +36,25 @@ function draftFromItem(item: RoutineItem): RoutineItemInput {
 }
 
 export function RoutineScreen() {
+  const enterKey = useShellEnterKey();
   const { routine } = useRepos();
   const { syncRevision } = useSync();
   const copy = strings().routine;
   const [items, setItems] = useState<RoutineItem[]>([]);
+  const [ready, setReady] = useState(false);
+  const showBody = ready && enterKey >= 0;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<RoutineItemInput>(emptyDraft);
-  const [timeText, setTimeText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RoutineItem | null>(null);
 
   const reload = useCallback(async () => {
-    setItems(await routine.listTemplates());
+    const list = await routine.listTemplates();
+    setItems(list);
+    setReady(true);
+    void syncRoutineReminders(list);
   }, [routine]);
 
   useEffect(() => {
@@ -57,7 +65,6 @@ export function RoutineScreen() {
     setEditorOpen(false);
     setEditingId(null);
     setDraft(emptyDraft());
-    setTimeText('');
     setError(null);
     setSaving(false);
   };
@@ -65,7 +72,6 @@ export function RoutineScreen() {
   const openAdd = () => {
     setEditingId(null);
     setDraft(emptyDraft());
-    setTimeText('');
     setError(null);
     setEditorOpen(true);
   };
@@ -73,9 +79,6 @@ export function RoutineScreen() {
   const startEdit = (item: RoutineItem) => {
     setEditingId(item.id);
     setDraft(draftFromItem(item));
-    setTimeText(
-      item.scheduledMinuteOfDay == null ? '' : formatMinuteOfDay(item.scheduledMinuteOfDay),
-    );
     setError(null);
     setEditorOpen(true);
   };
@@ -90,15 +93,9 @@ export function RoutineScreen() {
       return;
     }
 
-    const parsedTime = parseTimeInput(timeText);
-    if (timeText.trim() && parsedTime == null) {
-      setError(copy.errorTimeInvalid);
-      return;
-    }
-
     const payload: RoutineItemInput = {
       ...draft,
-      scheduledMinuteOfDay: parsedTime,
+      title: draft.title.trim(),
     };
 
     setSaving(true);
@@ -135,38 +132,43 @@ export function RoutineScreen() {
 
   return (
     <>
-      <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
-        <StaggerFadeIn index={0}>
-          <Text style={styles.title}>{copy.screenTitle}</Text>
-          <View style={styles.subHeader}>
-            <Text style={styles.subtitle}>{copy.subtitle}</Text>
-            <AnimatedPressable onPress={openAdd} style={styles.addPill}>
-              <Text style={styles.addPillText}>+ {copy.addItem}</Text>
-            </AnimatedPressable>
-          </View>
-        </StaggerFadeIn>
-        {items.length > 0 ? (
-          <Text style={styles.count}>{copy.templateCount(items.length)}</Text>
-        ) : null}
-
-        <RoutineList
-          items={items}
-          editingId={editingId}
-          onEdit={startEdit}
-          onDelete={setDeleteTarget}
-          onExpandAdd={openAdd}
-        />
-      </ScrollView>
+      {showBody ? (
+        <ScrollView key={enterKey} style={styles.wrap} contentContainerStyle={styles.content}>
+          <StaggerFadeIn index={0}>
+            <Text style={styles.title}>{copy.screenTitle}</Text>
+            <View style={styles.subHeader}>
+              <Text style={styles.subtitle}>{copy.subtitle}</Text>
+              <AnimatedPressable onPress={openAdd} style={styles.addPill}>
+                <Text style={styles.addPillText}>+ {copy.addItem}</Text>
+              </AnimatedPressable>
+            </View>
+          </StaggerFadeIn>
+          {items.length > 0 ? (
+            <StaggerFadeIn index={1}>
+              <Text style={styles.count}>{copy.templateCount(items.length)}</Text>
+            </StaggerFadeIn>
+          ) : null}
+          <RoutineList
+            items={items}
+            editingId={editingId}
+            onEdit={startEdit}
+            onDelete={setDeleteTarget}
+            onExpandAdd={openAdd}
+          />
+        </ScrollView>
+      ) : (
+        <View style={styles.content}>
+          <ListSkeleton variant="routine" rows={6} />
+        </View>
+      )}
 
       <RoutineEditorModal
         visible={editorOpen}
         editing={editingId != null}
         draft={draft}
-        timeText={timeText}
         error={error}
         saving={saving}
         onDraft={setDraft}
-        onTimeText={setTimeText}
         onClose={closeEditor}
         onSave={() => void saveDraft()}
       />
@@ -190,7 +192,7 @@ const styles = StyleSheet.create({
   content: {
     padding: theme.spacing.screenX,
     paddingTop: theme.spacing.screenTop,
-    paddingBottom: 24,
+    paddingBottom: TAB_BAR_CLEARANCE,
   },
   title: { fontSize: 32, fontWeight: '700', color: theme.colors.text },
   subHeader: {

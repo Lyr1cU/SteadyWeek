@@ -22,4 +22,14 @@ export class SyncController {
   push(@CurrentUser() user: AuthUser, @Body() dto: SyncPushDto) {
     return this.sync.push(user.userId, dto);
   }
+
+  @Get('revision')
+  revision(@CurrentUser() user: AuthUser) {
+    return this.sync.getCloudRevision(user.userId);
+  }
+
+  @Post('nudge')
+  nudge(@CurrentUser() user: AuthUser) {
+    return this.sync.nudgeClientPull(user.userId);
+  }
 }

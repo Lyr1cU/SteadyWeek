@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSync } from '../../app/sync-context';
 import { useRepos } from '../../app/repos-context';
 import { clearAuthSession, getUserEmail } from '../../data/auth/auth-store';
@@ -11,12 +11,28 @@ import {
   warningWindowDayKeys,
 } from '../../logic/warnings';
 import {
+  canScheduleExactAlarms,
+  canUseFullScreenIntent,
+  openExactAlarmSettings,
+  openFullScreenSettings,
+} from '../../../modules/steadyweek-alarms';
+import {
   closeDayRemindersAvailable,
+  initCloseDayReminder,
   testCloseDayReminder,
 } from '../../notifications/close-day-reminder';
+import {
+  getReminderPresentation,
+  setReminderPresentation,
+  type ReminderPresentation,
+} from '../../notifications/reminder-presentation';
+import { requestMissingAlarmAccess, syncRoutineReminders } from '../../notifications/routine-reminder-sync';
 import { strings } from '../../l10n';
 import { GlassSurface } from '../../ui/glass-surface';
+import { ListSkeleton } from '../../ui/list-skeleton';
+import { TAB_BAR_CLEARANCE } from '../../ui/motion/constants';
 import { AnimatedPressable } from '../../ui/motion/animated-pressable';
+import { useShellEnterKey } from '../../ui/motion/shell-pane';
 import { StaggerFadeIn } from '../../ui/motion/stagger-fade-in';
 import { theme } from '../../ui/theme';
 import { ProfileInfoRow } from './profile-info-row';
@@ -34,11 +50,15 @@ export function ProfileScreen({
   onAssistant: () => void;
   onAuth: () => void;
 }) {
-  const { stats, reports } = useRepos();
+  const enterKey = useShellEnterKey();
+  const { stats, reports, routine } = useRepos();
   const { loggedIn, refreshAuth, triggerSync, syncRevision } = useSync();
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [warnCount, setWarnCount] = useState(0);
   const [email, setEmail] = useState<string | null>(null);
+  const [reminderMode, setReminderMode] = useState<ReminderPresentation>('shade');
+  const [exactAlarms, setExactAlarms] = useState(true);
+  const [fullScreenAllowed, setFullScreenAllowed] = useState(true);
 
   const reload = useCallback(async () => {
     const anchor = dateKey(new Date());
@@ -52,9 +72,39 @@ export function ProfileScreen({
     setEmail(await getUserEmail());
   }, [stats, reports]);
 
+  const refreshReminderAccess = useCallback(async () => {
+    setReminderMode(await getReminderPresentation());
+    setExactAlarms(canScheduleExactAlarms());
+    setFullScreenAllowed(canUseFullScreenIntent());
+  }, []);
+
   useEffect(() => {
     void reload();
   }, [reload, syncRevision]);
+
+  useEffect(() => {
+    void refreshReminderAccess();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void refreshReminderAccess();
+      }
+    });
+    return () => sub.remove();
+  }, [refreshReminderAccess]);
+
+  const chooseReminderMode = async (next: ReminderPresentation) => {
+    if (next === reminderMode) {
+      return;
+    }
+    await setReminderPresentation(next);
+    setReminderMode(next);
+    await requestMissingAlarmAccess(next, next === 'screen');
+    const items = await routine.listTemplates();
+    await syncRoutineReminders(items);
+    await initCloseDayReminder();
+    setExactAlarms(canScheduleExactAlarms());
+    setFullScreenAllowed(canUseFullScreenIntent());
+  };
 
   const signOut = async () => {
     await clearAuthSession();
@@ -66,8 +116,10 @@ export function ProfileScreen({
   const showNudge = shouldShowAssistantNudge(warnCount);
   const remindersOn = closeDayRemindersAvailable();
 
-  return (
-    <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
+  const showBody = enterKey >= 0 && userStats != null;
+
+  return showBody ? (
+    <ScrollView key={enterKey} style={styles.wrap} contentContainerStyle={styles.content}>
       <StaggerFadeIn index={0}>
         <Text style={styles.title}>{copy.screenTitle}</Text>
         {loggedIn && email ? (
@@ -110,11 +162,46 @@ export function ProfileScreen({
       <GlassSurface style={styles.menuCard}>
         {remindersOn ? (
           <>
-            <ProfileInfoRow
-              icon="notifications-outline"
-              label={copy.closeDayReminder}
-              subtitle={copy.reminderStatusOk}
-            />
+            {Platform.OS === 'android' ? (
+              <>
+                <ProfileMenuRow
+                  icon="notifications-outline"
+                  label={copy.reminderModeShade}
+                  subtitle={copy.reminderModeShadeHint}
+                  selected={reminderMode === 'shade'}
+                  onPress={() => void chooseReminderMode('shade')}
+                />
+                <ProfileMenuRow
+                  icon="phone-portrait-outline"
+                  label={copy.reminderModeScreen}
+                  subtitle={copy.reminderModeScreenHint}
+                  selected={reminderMode === 'screen'}
+                  onPress={() => void chooseReminderMode('screen')}
+                />
+                {!exactAlarms ? (
+                  <ProfileMenuRow
+                    icon="alarm-outline"
+                    label={copy.exactAlarmsNeeded}
+                    subtitle={copy.exactAlarmsNeededHint}
+                    onPress={openExactAlarmSettings}
+                  />
+                ) : null}
+                {reminderMode === 'screen' && !fullScreenAllowed ? (
+                  <ProfileMenuRow
+                    icon="expand-outline"
+                    label={copy.fullScreenNeeded}
+                    subtitle={copy.fullScreenNeededHint}
+                    onPress={openFullScreenSettings}
+                  />
+                ) : null}
+              </>
+            ) : (
+              <ProfileInfoRow
+                icon="notifications-outline"
+                label={copy.closeDayReminder}
+                subtitle={copy.reminderStatusOk}
+              />
+            )}
             <ProfileMenuRow
               icon="time-outline"
               label={copy.testNotification}
@@ -153,6 +240,10 @@ export function ProfileScreen({
       </GlassSurface>
       </StaggerFadeIn>
     </ScrollView>
+  ) : (
+    <View style={styles.content}>
+      <ListSkeleton variant="routine" rows={5} />
+    </View>
   );
 }
 
@@ -161,7 +252,7 @@ const styles = StyleSheet.create({
   content: {
     padding: theme.spacing.screenX,
     paddingTop: theme.spacing.screenTop,
-    paddingBottom: 24,
+    paddingBottom: TAB_BAR_CLEARANCE,
   },
   title: { fontSize: 32, fontWeight: '700', color: theme.colors.text, marginBottom: 8 },
   email: { color: theme.colors.textMuted, marginBottom: 16, fontSize: 14 },

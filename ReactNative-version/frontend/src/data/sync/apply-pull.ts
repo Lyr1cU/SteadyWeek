@@ -1,5 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import type { PullResponse } from './sync-types';
+import { MCP_SYNC_NUDGE_SETTING_KEY, emitMcpSyncNudge } from './mcp-sync-nudge';
 
 export async function applyPull(db: SQLiteDatabase, pull: PullResponse): Promise<void> {
   const weeklyGoals = pull.weeklyGoals ?? [];
@@ -89,6 +90,16 @@ export async function applyPull(db: SQLiteDatabase, pull: PullResponse): Promise
         continue;
       }
 
+      let prevValue: string | undefined;
+      if (row.key === MCP_SYNC_NUDGE_SETTING_KEY) {
+        prevValue = (
+          await db.getFirstAsync<{ value: string }>(
+            'SELECT value FROM app_settings WHERE key = ?',
+            row.key,
+          )
+        )?.value;
+      }
+
       await db.runAsync(
         `INSERT INTO app_settings (key, value, updated_at, pending_sync)
          VALUES (?, ?, ?, 0)
@@ -100,6 +111,10 @@ export async function applyPull(db: SQLiteDatabase, pull: PullResponse): Promise
         row.value,
         row.updatedAt,
       );
+
+      if (row.key === MCP_SYNC_NUDGE_SETTING_KEY && prevValue !== row.value) {
+        emitMcpSyncNudge();
+      }
     }
 
     if (pull.userStats) {

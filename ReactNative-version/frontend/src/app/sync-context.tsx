@@ -14,6 +14,8 @@ import { ApiError } from '../data/api/client';
 import { clearAuthSession, isLoggedIn } from '../data/auth/auth-store';
 import type { SyncStatus } from '../data/sync/sync-engine';
 import { registerSyncHandler } from '../data/sync/schedule-sync';
+import { onMcpSyncNudge } from '../data/sync/mcp-sync-nudge';
+import { useRoutineReminderSync } from '../notifications/use-routine-reminder-sync';
 import { useRepos } from './repos-context';
 
 /** Pull cloud changes (MCP, other devices) without tapping Sync now. */
@@ -29,6 +31,11 @@ type SyncContextValue = {
 };
 
 const SyncContext = createContext<SyncContextValue | null>(null);
+
+function SyncProviderEffects({ children }: { children: ReactNode }) {
+  useRoutineReminderSync();
+  return children;
+}
 
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { sync } = useRepos();
@@ -111,6 +118,17 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, [loggedIn, triggerSync]);
 
   useEffect(() => {
+    if (!loggedIn) {
+      return;
+    }
+    return onMcpSyncNudge(() => {
+      if (appState.current === 'active') {
+        void triggerSync({ quiet: true });
+      }
+    });
+  }, [loggedIn, triggerSync]);
+
+  useEffect(() => {
     void refreshAuth();
   }, [refreshAuth]);
 
@@ -130,7 +148,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     [status, syncError, syncRevision, triggerSync, refreshAuth, loggedIn],
   );
 
-  return <SyncContext.Provider value={value}>{children}</SyncContext.Provider>;
+  return (
+    <SyncContext.Provider value={value}>
+      <SyncProviderEffects>{children}</SyncProviderEffects>
+    </SyncContext.Provider>
+  );
 }
 
 export function useSync(): SyncContextValue {
